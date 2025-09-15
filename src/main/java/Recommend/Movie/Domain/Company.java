@@ -1,0 +1,17 @@
+package Recommend.Movie.Domain;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+
+@Entity
+public class Company {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+    // 회사 이름
+    private String name;
+    // 로고 이미지 경로
+    private String logoPath;
+}
