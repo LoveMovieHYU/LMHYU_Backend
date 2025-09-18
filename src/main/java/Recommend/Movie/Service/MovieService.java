@@ -6,6 +6,8 @@ import Recommend.Movie.Converter.MovieConverter;
 import Recommend.Movie.DTO.*;
 import Recommend.Movie.Domain.*;
 import Recommend.Movie.Repository.*;
+import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -15,8 +17,10 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 
 @Service
+@Slf4j
 public class MovieService {
     private final CompanyRepository companyRepository;
     private final MovieCompanyRepository movieCompanyRepository;
@@ -42,6 +46,7 @@ public class MovieService {
 
     public void fetchAndSaveAllFromDiscover(int startPage, int endPage, boolean includeAdult){
         if (startPage < 1 || endPage < startPage) {
+            log.error("Invalid page range: startPage={}, endPage={}", startPage, endPage);
             throw new IllegalArgumentException("페이지 범위가 올바르지 않습니다.");
         }
 
@@ -66,13 +71,11 @@ public class MovieService {
 
             for (DiscoverMovieSummary summary : body.results) {
                 if (summary == null) continue;
-
-                // 이미 저장된 영화라면 스킵(상세 호출 줄이기)
-                if (movieRepository.findById(summary.getId()) != null) {
+                Optional<Movie> optionalMovie = movieRepository.findByTmdbId((long) summary.getId());
+                if (optionalMovie.isPresent()) {
+                    log.info("이미 존재하는 영화 ID {}, 스킵", summary.getId());
                     continue;
                 }
-
-                // 상세 저장 시도
                 try {
                     fetchAndSaveMovieDetail(summary.getId());
                     // 간단한 rate-limit 완화 (필요시 조절/제거)
@@ -89,6 +92,7 @@ public class MovieService {
                     }
                 } catch (Exception e) {
                     // 기타 오류는 로깅 후 스킵
+                    log.error("Failed to process summary id={}", summary.getId(), e);
                 }
             }
 
@@ -103,17 +107,17 @@ public class MovieService {
      * 특정 movieId 에 대한 상세정보를 가져와 DB에 저장합니다.
      * - Movie / Genre / Company 및 조인 관계 저장
      */
+    @Transactional
     public void fetchAndSaveMovieDetail(int movieId){
         String url = UriComponentsBuilder.fromHttpUrl(baseUrl + "/movie/" + movieId)
                 .queryParam("api_key", apikey)
                 .queryParam("language", "ko-KR")
                 .toUriString();
-
+        log.info("Fetching movie detail from URL: {}", url);
         MovieDetailDTO detailDTO = null;
         try {
             detailDTO = restTemplate.getForObject(url, MovieDetailDTO.class);
         } catch (HttpClientErrorException.NotFound nf) {
-            // 없는 영화
             return;
         }
 
@@ -121,39 +125,45 @@ public class MovieService {
             return;
         }
 
-        // 1) 장르 저장
         saveGenres(detailDTO.getGenres());
 
-        // 2) 제작사 저장
         saveCompanies(detailDTO.getProductionCompanies());
 
-        // 3) 영화 저장(없으면 생성)
-        Movie movie = getOrCreateMovieFromDTO(detailDTO);
-        movieRepository.save(movie);
+        try {
+            Movie movie = getOrCreateMovieFromDTO(detailDTO); // ← 여기서 NPE 많이 남
+            movieRepository.save(movie);
 
-        // 4) 조인 관계 저장 (영화-장르)
-        if (detailDTO.getGenres() != null) {
-            for (GenreDTO genreDTO : detailDTO.getGenres()) {
-                if (genreDTO == null) continue;
-                if (!movieGenreRepository.existsByMovie_IdAndGenre_Id(movie.getId(), genreDTO.getId())) {
-                    Genre genre = genreRepository.getReferenceById(genreDTO.getId());
-                    MovieGenre movieGenre = getMovieGenre(genre, movie);
-                    movieGenreRepository.save(movieGenre);
+            // 4) 조인 관계 저장 (영화-장르)
+            if (detailDTO.getGenres() != null) {
+                for (GenreDTO genreDTO : detailDTO.getGenres()) {
+                    if (genreDTO == null) continue;
+                    if (!movieGenreRepository.existsByMovie_IdAndGenre_Id(movie.getId(), genreDTO.getId())) {
+                        Genre genre = genreRepository.getReferenceById(genreDTO.getId());
+                        MovieGenre movieGenre = getMovieGenre(genre, movie);
+                        log.info("Saving MovieGenre: Movie {} - Genre {}", movie.getId(), genre.getId());
+                        movieGenreRepository.save(movieGenre);
+                    }
                 }
             }
-        }
-
-        // 5) 조인 관계 저장 (영화-제작사)
-        if (detailDTO.getProductionCompanies() != null) {
-            for (CompanyDTO companyDTO : detailDTO.getProductionCompanies()) {
-                if (companyDTO == null) continue;
-                if (!movieCompanyRepository.existsByMovie_IdAndCompany_Id(movie.getId(), companyDTO.getId())) {
-                    Company company = companyRepository.getReferenceById(companyDTO.getId());
-                    MovieCompany movieCompany = getMovieCompany(company, movie);
-                    movieCompanyRepository.save(movieCompany);
+            // 5) 조인 관계 저장 (영화-제작사)
+            if (detailDTO.getProductionCompanies() != null) {
+                for (CompanyDTO companyDTO : detailDTO.getProductionCompanies()) {
+                    if (companyDTO == null) continue;
+                    if (!movieCompanyRepository.existsByMovie_IdAndCompany_Id(movie.getId(), companyDTO.getId())) {
+                        Company company = companyRepository.getReferenceById(companyDTO.getId());
+                        MovieCompany movieCompany = getMovieCompany(company, movie);
+                        log.info("Saving MovieCompany: Movie {} - Company {}", movie.getTitle(), company.getName());
+                        movieCompanyRepository.save(movieCompany);
+                    }
                 }
             }
+        } catch (Exception ex) {
+            log.error("Saving movie failed. dtoTmdbId={}, title={}, runtime={}, voteAvg={}, release={}",
+                    detailDTO.getTmdbId(), detailDTO.getTitle(), detailDTO.getRuntime(),
+                    detailDTO.getVoteAverage(), detailDTO.getReleaseDate(), ex);
+            throw ex;
         }
+
     }
 
     private static MovieGenre getMovieGenre(Genre genre, Movie movie) {
@@ -177,6 +187,7 @@ public class MovieService {
         for(GenreDTO genreDTO : genreDTOList){
             if(genreDTO == null) continue;
             if(!genreRepository.existsById(genreDTO.getId())){
+                log.info("Saving new genre: {} - {}", genreDTO.getId(), genreDTO.getName());
                 genreRepository.save(GenreConverter.toEntity(genreDTO));
             }
         }
@@ -187,19 +198,16 @@ public class MovieService {
         for(CompanyDTO companyDTO : companyDTOList){
             if(companyDTO == null) continue;
             if(!companyRepository.existsById(companyDTO.getId())){
+                log.info("Saving new company: {} - {}", companyDTO.getId(), companyDTO.getName());
                 companyRepository.save(CompanyConverter.toEntity(companyDTO));
             }
         }
     }
 
     private Movie getOrCreateMovieFromDTO(MovieDetailDTO detailDTO) {
-        Movie movie = movieRepository.findById(detailDTO.getId());
-        if (movie == null) {
-            movie = MovieConverter.toEntity(detailDTO);
-        } else {
-            MovieConverter.updateFromDTO(movie, detailDTO);
-        }
-        return movie;
+        return movieRepository.findByTmdbId(detailDTO.getTmdbId())
+                .map(movie -> MovieConverter.updateFromDTO(movie, detailDTO))
+                .orElseGet(() -> MovieConverter.toEntity(detailDTO));
 
     }
 

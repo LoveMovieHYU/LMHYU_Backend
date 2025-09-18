@@ -11,20 +11,20 @@ public class MovieConverter {
         Objects.requireNonNull(dto, "dto must not be null");
 
         return Movie.builder()
-                .id(dto.getId())
+                .tmdbId(dto.getTmdbId())
                 .title(dto.getTitle())
                 .overview(dto.getOverview())
                 .posterPath(dto.getPosterPath())
                 .runtime(dto.getRuntime())
                 .releaseDate(dto.getReleaseDate())
-                .voteAverage(dto.getVoteAverage())
+                .voteAverage(dto.getVoteAverage() == null ? 0 : (int)Math.round(dto.getVoteAverage()))
                 .adult(dto.getAdult())
                 .originalLanguage(dto.getOriginalLanguage())
                 .build();
     }
 
     /** 기존 엔티티에 DTO 값 반영 (부분 업데이트) */
-    public static void updateFromDTO(Movie movie, MovieDetailDTO dto) {
+    public static Movie updateFromDTO(Movie movie, MovieDetailDTO dto) {
         if (dto.getTitle() != null) movie.setTitle(dto.getTitle());
         if (dto.getOverview() != null) movie.setOverview(dto.getOverview());
         if (dto.getPosterPath() != null) movie.setPosterPath(dto.getPosterPath());
@@ -34,6 +34,7 @@ public class MovieConverter {
         if (dto.getAdult() != null) movie.setAdult(dto.getAdult());
         if (dto.getOriginalLanguage() != null) movie.setOriginalLanguage(dto.getOriginalLanguage());
         // tmdbId는 식별 용도이므로 일반적으로 변경하지 않음
+        return movie;
     }
 
 }

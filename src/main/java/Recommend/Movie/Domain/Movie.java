@@ -17,7 +17,10 @@ public class Movie {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
-    
+
+    @Column(unique = true, nullable = false)
+    private Long tmdbId;
+
     // 영화 제목
     private String title;
     // 개요

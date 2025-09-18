@@ -8,7 +8,10 @@ import java.util.List;
 
 @Data
 public class MovieDetailDTO {
-    private int id;
+
+    @JsonProperty("id")
+    private Long tmdbId;
+
     private String title;
     private String overview;
     private Integer runtime;
