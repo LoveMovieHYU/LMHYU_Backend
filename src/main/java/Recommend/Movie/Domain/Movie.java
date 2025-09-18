@@ -1,15 +1,17 @@
 package Recommend.Movie.Domain;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Getter
-@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Data
 public class Movie {
 
     @Id
@@ -28,7 +30,7 @@ public class Movie {
     // 개봉날짜
     private LocalDate releaseDate;
     // 평점
-    private int voteAverage;
+    private double voteAverage;
     // 성인물 여부
     private boolean adult;
     // 원어
@@ -36,6 +38,21 @@ public class Movie {
 
     @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Review> reviews;
+
+    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<MovieCompany> companies = new ArrayList<>();
+
+    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<MovieGenre> genres = new ArrayList<>();
+
+    public void addGenre(MovieGenre genre) {
+        genres.add(genre);
+        genre.setMovie(this);
+    }
+    public void addCompany(MovieCompany company) {
+        companies.add(company);
+        company.setMovie(this);
+    }
 
     public void addReview(Review review) {
         reviews.add(review);

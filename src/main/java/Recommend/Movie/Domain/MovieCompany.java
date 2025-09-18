@@ -1,8 +1,10 @@
 package Recommend.Movie.Domain;
 
 import jakarta.persistence.*;
+import lombok.Setter;
 
 @Entity
+@Setter
 public class MovieCompany {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
