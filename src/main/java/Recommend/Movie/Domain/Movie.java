@@ -8,10 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-@Data
+@Getter
+@Setter
 public class Movie {
 
     @Id
@@ -40,7 +38,7 @@ public class Movie {
     private String originalLanguage;
 
     @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Review> reviews;
+    private List<Review> reviews = new ArrayList<>();
 
     @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MovieCompany> companies = new ArrayList<>();
@@ -49,15 +47,18 @@ public class Movie {
     private List<MovieGenre> genres = new ArrayList<>();
 
     public void addGenre(MovieGenre genre) {
+        if (genres == null) genres = new ArrayList<>();
         genres.add(genre);
         genre.setMovie(this);
     }
     public void addCompany(MovieCompany company) {
+        if (company == null) companies = new ArrayList<>();
         companies.add(company);
         company.setMovie(this);
     }
 
     public void addReview(Review review) {
+        if (review == null) reviews = new ArrayList<>();
         reviews.add(review);
         review.setMovie(this);
     }

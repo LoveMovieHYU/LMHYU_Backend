@@ -9,18 +9,18 @@ import java.util.Objects;
 public class MovieConverter {
     public static Movie toEntity(MovieDetailDTO dto) {
         Objects.requireNonNull(dto, "dto must not be null");
+        Movie movie = new Movie();
+        movie.setTmdbId(dto.getTmdbId());
+        movie.setTitle(dto.getTitle());
+        movie.setOverview(dto.getOverview());
+        movie.setPosterPath(dto.getPosterPath());
+        movie.setRuntime(dto.getRuntime());
+        movie.setReleaseDate(dto.getReleaseDate());
+        movie.setVoteAverage(dto.getVoteAverage() == null ? 0 : (int)Math.round(dto.getVoteAverage()));
+        movie.setAdult(dto.getAdult());
+        movie.setOriginalLanguage(dto.getOriginalLanguage());
+        return movie;
 
-        return Movie.builder()
-                .tmdbId(dto.getTmdbId())
-                .title(dto.getTitle())
-                .overview(dto.getOverview())
-                .posterPath(dto.getPosterPath())
-                .runtime(dto.getRuntime())
-                .releaseDate(dto.getReleaseDate())
-                .voteAverage(dto.getVoteAverage() == null ? 0 : (int)Math.round(dto.getVoteAverage()))
-                .adult(dto.getAdult())
-                .originalLanguage(dto.getOriginalLanguage())
-                .build();
     }
 
     /** 기존 엔티티에 DTO 값 반영 (부분 업데이트) */
