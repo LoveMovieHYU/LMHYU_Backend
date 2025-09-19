@@ -45,8 +45,8 @@ public class PeopleService {
     private String baseUrl;
 
     @Transactional
-    public void fetchAndSaveCreditsByMovieId(Long tmdbId, boolean fetchPersonDetail){
-        Optional<Movie> optionalMovie = movieRepository.findByTmdbId(tmdbId);
+    public void fetchAndSaveCreditsByMovieId(int tmdbId, boolean fetchPersonDetail){
+        Optional<Movie> optionalMovie = movieRepository.findByTmdbId((long) tmdbId);
         if(optionalMovie.isEmpty()){
             System.out.println("Movie with tmdbId " + tmdbId + " not found in the database.");
             return;
