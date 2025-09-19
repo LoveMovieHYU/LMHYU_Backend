@@ -4,8 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -38,27 +38,35 @@ public class Movie {
     private String originalLanguage;
 
     @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Review> reviews = new ArrayList<>();
+    private Set<Review> reviews = new HashSet<>();
 
     @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<MovieCompany> companies = new ArrayList<>();
+    private Set<MovieCompany> companies = new HashSet<>();
 
     @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<MovieGenre> genres = new ArrayList<>();
+    private Set<MovieGenre> genres = new HashSet<>();
+
+    @OneToMany(mappedBy = "movie", cascade =  CascadeType.ALL, orphanRemoval = true)
+    private Set<MoviePeople> peoples = new HashSet<>();
 
     public void addGenre(MovieGenre genre) {
-        if (genres == null) genres = new ArrayList<>();
+        if (genres == null) genres = new HashSet<>();
         genres.add(genre);
         genre.setMovie(this);
     }
     public void addCompany(MovieCompany company) {
-        if (company == null) companies = new ArrayList<>();
+        if (company == null) companies = new HashSet<>();
         companies.add(company);
         company.setMovie(this);
     }
+    public void addPeople(MoviePeople people) {
+        if (peoples == null) peoples = new HashSet<>();
+        peoples.add(people);
+        people.setMovie(this);
+    }
 
     public void addReview(Review review) {
-        if (review == null) reviews = new ArrayList<>();
+        if (review == null) reviews = new HashSet<>();
         reviews.add(review);
         review.setMovie(this);
     }
