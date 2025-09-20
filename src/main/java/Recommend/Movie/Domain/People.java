@@ -28,4 +28,15 @@ public class People {
     private String biography;
     // 프로필 사진
     private String profileImagePath;
+
+    // tmdb ID
+    @Column(unique = true)
+    private Long tmdbId;
+
+    @Transient
+    private boolean isNew = false;
+
+    public void markNew(){
+        this.isNew = true;
+    }
 }
