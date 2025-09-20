@@ -40,14 +40,14 @@ public class MovieController {
     @PostMapping("/{movieId}/sync")
     public ResponseEntity<?> syncOne(@PathVariable("movieId") int movieId) {
         if (movieId <= 0) {
-            return ResponseEntity.badRequest().body("movieId는 1 이상의 정수여야 합니다.");
+            return ResponseEntity.badRequest().body("movieId is required and must be positive.");
         }
         try {
             movieService.fetchAndSaveMovieDetail(movieId);
-            return ResponseEntity.ok("동기화 완료: movieId=" + movieId);
+            return ResponseEntity.ok("success sync: movieId=" + movieId);
         } catch (Exception e) {
             // 필요시 로깅 추가
-            return ResponseEntity.internalServerError().body("단일 동기화 중 오류가 발생했습니다: " + e.getMessage());
+            return ResponseEntity.internalServerError().body("single sync have error " + e.getMessage());
         }
     }
 }

@@ -28,14 +28,16 @@ public class MovieService {
     private final MovieRepository movieRepository;
     private final GenreRepository genreRepository;
     private final MovieGenreRepository movieGenreRepository;
+    private final PeopleService peopleService;
 
-    public MovieService(CompanyRepository companyRepository, MovieCompanyRepository movieCompanyRepository, RestTemplate restTemplate, MovieRepository movieRepository, GenreRepository genreRepository, MovieGenreRepository movieGenreRepository) {
+    public MovieService(CompanyRepository companyRepository, MovieCompanyRepository movieCompanyRepository, RestTemplate restTemplate, MovieRepository movieRepository, GenreRepository genreRepository, MovieGenreRepository movieGenreRepository, PeopleService peopleService) {
         this.companyRepository = companyRepository;
         this.movieCompanyRepository = movieCompanyRepository;
         this.restTemplate = restTemplate;
         this.movieRepository = movieRepository;
         this.genreRepository = genreRepository;
         this.movieGenreRepository = movieGenreRepository;
+        this.peopleService = peopleService;
     }
 
     @Value("${tmdb.api.key}")
@@ -126,12 +128,12 @@ public class MovieService {
         }
 
         saveGenres(detailDTO.getGenres());
-
         saveCompanies(detailDTO.getProductionCompanies());
 
         try {
-            Movie movie = getOrCreateMovieFromDTO(detailDTO); // ← 여기서 NPE 많이 남
-            movieRepository.save(movie);
+            Movie movie = getOrCreateMovieFromDTO(detailDTO);
+            movieRepository.saveAndFlush(movie);
+            peopleService.fetchAndSaveCreditsByMovieId(movie, true);
 
             // 4) 조인 관계 저장 (영화-장르)
             if (detailDTO.getGenres() != null) {
@@ -140,7 +142,6 @@ public class MovieService {
                     if (!movieGenreRepository.existsByMovie_IdAndGenre_Id(movie.getId(), genreDTO.getId())) {
                         Genre genre = genreRepository.getReferenceById(genreDTO.getId());
                         MovieGenre movieGenre = getMovieGenre(genre, movie);
-                        log.info("Saving MovieGenre: Movie {} - Genre {}", movie.getId(), genre.getId());
                         movieGenreRepository.save(movieGenre);
                     }
                 }
@@ -152,7 +153,6 @@ public class MovieService {
                     if (!movieCompanyRepository.existsByMovie_IdAndCompany_Id(movie.getId(), companyDTO.getId())) {
                         Company company = companyRepository.getReferenceById(companyDTO.getId());
                         MovieCompany movieCompany = getMovieCompany(company, movie);
-                        log.info("Saving MovieCompany: Movie {} - Company {}", movie.getTitle(), company.getName());
                         movieCompanyRepository.save(movieCompany);
                     }
                 }
@@ -187,7 +187,6 @@ public class MovieService {
         for(GenreDTO genreDTO : genreDTOList){
             if(genreDTO == null) continue;
             if(!genreRepository.existsById(genreDTO.getId())){
-                log.info("Saving new genre: {} - {}", genreDTO.getId(), genreDTO.getName());
                 genreRepository.save(GenreConverter.toEntity(genreDTO));
             }
         }
@@ -198,7 +197,6 @@ public class MovieService {
         for(CompanyDTO companyDTO : companyDTOList){
             if(companyDTO == null) continue;
             if(!companyRepository.existsById(companyDTO.getId())){
-                log.info("Saving new company: {} - {}", companyDTO.getId(), companyDTO.getName());
                 companyRepository.save(CompanyConverter.toEntity(companyDTO));
             }
         }

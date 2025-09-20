@@ -45,19 +45,19 @@ public class PeopleService {
     private String baseUrl;
 
     @Transactional
-    public void fetchAndSaveCreditsByMovieId(int tmdbId, boolean fetchPersonDetail){
-        Optional<Movie> optionalMovie = movieRepository.findByTmdbId((long) tmdbId);
-        if(optionalMovie.isEmpty()){
-            System.out.println("Movie with tmdbId " + tmdbId + " not found in the database.");
+    public void fetchAndSaveCreditsByMovieId(Movie movie, boolean fetchPersonDetail){
+//        Optional<Movie> optionalMovie = movieRepository.findByTmdbId(tmdbId);
+        Long tmdbId = movie.getTmdbId();
+        if(tmdbId == null){
+            log.error("Movie tmdbId is null, cannot fetch credits.");
             return;
         }
-        Movie movie = optionalMovie.get();
-
         String creditsUrl = UriComponentsBuilder.fromHttpUrl(baseUrl + "/movie/" + tmdbId + "/credits")
                 .queryParam("api_key", apikey)
                 .queryParam("language", "ko-KR")
                 .toUriString();
 
+        log.info("Fetching Credits detail from URL: {}", creditsUrl);
         CreditsResponse credits;
         try{
             credits = restTemplate.getForObject(creditsUrl, CreditsResponse.class);
@@ -72,13 +72,13 @@ public class PeopleService {
 
         if (credits.getCast() != null) {
             for (CreditsPeople creditsPeople : credits.getCast()) {
-                upsertPersonAndLink(movie, creditsPeople, "배우", fetchPersonDetail);
+                upsertPersonAndLink(movie, creditsPeople, "ACTOR", fetchPersonDetail);
             }
         }
 
         if (credits.getCrew() != null) {
             for (CreditsPeople creditsPeople : credits.getCrew()) {
-                upsertPersonAndLink(movie, creditsPeople, "제작진", fetchPersonDetail);
+                upsertPersonAndLink(movie, creditsPeople, "PRODUCER", fetchPersonDetail);
             }
         }
     }
@@ -88,6 +88,7 @@ public class PeopleService {
         if(creditsPeople == null) return;
         int peopleId = creditsPeople.getId();
         People people = peopleRepository.findById(peopleId);
+        log.info("Upserting person with id {} and link {}", peopleId, jobKor);
         if (people == null) {
             people = new People();
             people.setId(peopleId);
