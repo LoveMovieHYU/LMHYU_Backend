@@ -6,6 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface PeopleRepository extends JpaRepository<People, String> {
-    People findById(long id);
-
+    People findByTmdbId(long tmdbId);
 }

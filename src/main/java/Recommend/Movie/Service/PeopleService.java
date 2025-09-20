@@ -19,7 +19,6 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.LocalDate;
-import java.util.Optional;
 
 @Service
 @Slf4j
@@ -46,7 +45,6 @@ public class PeopleService {
 
     @Transactional
     public void fetchAndSaveCreditsByMovieId(Movie movie, boolean fetchPersonDetail){
-//        Optional<Movie> optionalMovie = movieRepository.findByTmdbId(tmdbId);
         Long tmdbId = movie.getTmdbId();
         if(tmdbId == null){
             log.error("Movie tmdbId is null, cannot fetch credits.");
@@ -57,7 +55,6 @@ public class PeopleService {
                 .queryParam("language", "ko-KR")
                 .toUriString();
 
-        log.info("Fetching Credits detail from URL: {}", creditsUrl);
         CreditsResponse credits;
         try{
             credits = restTemplate.getForObject(creditsUrl, CreditsResponse.class);
@@ -86,12 +83,12 @@ public class PeopleService {
     private void upsertPersonAndLink(Movie movie, CreditsPeople creditsPeople,
                                      String jobKor, boolean fetchDetail) {
         if(creditsPeople == null) return;
-        int peopleId = creditsPeople.getId();
-        People people = peopleRepository.findById(peopleId);
-        log.info("Upserting person with id {} and link {}", peopleId, jobKor);
+        int tmdbPeopleId = creditsPeople.getId();
+        People people = peopleRepository.findByTmdbId(tmdbPeopleId);
         if (people == null) {
             people = new People();
-            people.setId(peopleId);
+            people.setTmdbId((long) tmdbPeopleId);
+            people.markNew();
         }
 
         if(creditsPeople.getName() != null){
@@ -109,17 +106,14 @@ public class PeopleService {
         }
 
         if (fetchDetail && (isNullOrBlank(people.getBiography()) || isNullOrBlank(String.valueOf(people.getBirthDay())))) {
-            fillPersonDetail(peopleId, people);
+            fillPersonDetail(tmdbPeopleId, people);
         }
-
         peopleRepository.save(people);
-        // movie_person 조인 (중복 방지)
-        if (!moviePeopleRepository.existsByMovie_IdAndPeople_Id(movie.getId(), peopleId)) {
+        if (!moviePeopleRepository.existsByMovie_IdAndPeople_Id(movie.getId(), tmdbPeopleId)) {
             MoviePeople moviePeople = new MoviePeople();
             moviePeople.setMovie(movie);
             moviePeople.setPeople(people);
             moviePeopleRepository.save(moviePeople);
-            log.info("link saved: movie_id={} people_id={} ({})", movie.getId(), peopleId, jobKor);
         }
     }
 

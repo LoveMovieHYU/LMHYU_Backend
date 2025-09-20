@@ -32,7 +32,6 @@ public class MovieController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
-            // 필요시 로깅 추가
             return ResponseEntity.internalServerError().body("Discover 수집 중 오류가 발생했습니다: " + e.getMessage());
         }
     }
@@ -46,7 +45,6 @@ public class MovieController {
             movieService.fetchAndSaveMovieDetail(movieId);
             return ResponseEntity.ok("success sync: movieId=" + movieId);
         } catch (Exception e) {
-            // 필요시 로깅 추가
             return ResponseEntity.internalServerError().body("single sync have error " + e.getMessage());
         }
     }

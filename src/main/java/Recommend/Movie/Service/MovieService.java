@@ -2,7 +2,7 @@ package Recommend.Movie.Service;
 
 import Recommend.Movie.Converter.CompanyConverter;
 import Recommend.Movie.Converter.GenreConverter;
-import Recommend.Movie.Converter.MovieConverter;
+import Recommend.Movie.Converter.MoviesConverter;
 import Recommend.Movie.DTO.*;
 import Recommend.Movie.Domain.*;
 import Recommend.Movie.Repository.*;
@@ -52,7 +52,6 @@ public class MovieService {
             throw new IllegalArgumentException("페이지 범위가 올바르지 않습니다.");
         }
 
-        // 1. TMDB API 호출 URL 생성
         for (int page = startPage; page <= endPage; page++) {
             String url = UriComponentsBuilder.fromHttpUrl(baseUrl + "/discover/movie")
                     .queryParam("api_key", apikey)
@@ -67,7 +66,6 @@ public class MovieService {
         DiscoverResponse body = resp.getBody();
 
             if (body == null || body.results == null || body.results.isEmpty()) {
-                // 더 이상 결과가 없으면 조기 종료
                 break;
             }
 
@@ -75,30 +73,25 @@ public class MovieService {
                 if (summary == null) continue;
                 Optional<Movie> optionalMovie = movieRepository.findByTmdbId((long) summary.getId());
                 if (optionalMovie.isPresent()) {
-                    log.info("이미 존재하는 영화 ID {}, 스킵", summary.getId());
                     continue;
                 }
                 try {
                     fetchAndSaveMovieDetail(summary.getId());
-                    // 간단한 rate-limit 완화 (필요시 조절/제거)
                     sleepSilently(Duration.ofMillis(150));
                 } catch (HttpClientErrorException.NotFound nf) {
                     // 비어있는 ID(404)는 스킵
                 } catch (HttpClientErrorException.TooManyRequests tmr) {
-                    // Rate limit → 잠시 대기 후 재시도(한 번)
                     sleepSilently(Duration.ofSeconds(2));
                     try {
                         fetchAndSaveMovieDetail(summary.id);
                     } catch (Exception e2) {
-                        // 재시도 실패는 로깅 후 스킵
+                        log.error(e2.getMessage(), e2);
                     }
                 } catch (Exception e) {
-                    // 기타 오류는 로깅 후 스킵
                     log.error("Failed to process summary id={}", summary.getId(), e);
                 }
             }
 
-            // total_pages 를 넘어가면 조기 종료
             if (body.total_pages != null && page >= body.total_pages) {
                 break;
             }
@@ -115,7 +108,6 @@ public class MovieService {
                 .queryParam("api_key", apikey)
                 .queryParam("language", "ko-KR")
                 .toUriString();
-        log.info("Fetching movie detail from URL: {}", url);
         MovieDetailDTO detailDTO = null;
         try {
             detailDTO = restTemplate.getForObject(url, MovieDetailDTO.class);
@@ -135,7 +127,6 @@ public class MovieService {
             movieRepository.saveAndFlush(movie);
             peopleService.fetchAndSaveCreditsByMovieId(movie, true);
 
-            // 4) 조인 관계 저장 (영화-장르)
             if (detailDTO.getGenres() != null) {
                 for (GenreDTO genreDTO : detailDTO.getGenres()) {
                     if (genreDTO == null) continue;
@@ -146,7 +137,6 @@ public class MovieService {
                     }
                 }
             }
-            // 5) 조인 관계 저장 (영화-제작사)
             if (detailDTO.getProductionCompanies() != null) {
                 for (CompanyDTO companyDTO : detailDTO.getProductionCompanies()) {
                     if (companyDTO == null) continue;
@@ -204,8 +194,8 @@ public class MovieService {
 
     private Movie getOrCreateMovieFromDTO(MovieDetailDTO detailDTO) {
         return movieRepository.findByTmdbId(detailDTO.getTmdbId())
-                .map(movie -> MovieConverter.updateFromDTO(movie, detailDTO))
-                .orElseGet(() -> MovieConverter.toEntity(detailDTO));
+                .map(movie -> MoviesConverter.updateFromDTO(movie, detailDTO))
+                .orElseGet(() -> MoviesConverter.toEntity(detailDTO));
 
     }
 
