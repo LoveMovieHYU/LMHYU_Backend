@@ -8,7 +8,6 @@ import Recommend.Movie.Domain.Movie;
 import Recommend.Movie.Domain.MoviePeople;
 import Recommend.Movie.Domain.People;
 import Recommend.Movie.Repository.MoviePeopleRepository;
-import Recommend.Movie.Repository.MovieRepository;
 import Recommend.Movie.Repository.PeopleRepository;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -25,14 +24,12 @@ import java.time.LocalDate;
 public class PeopleService {
 
     private final RestTemplate restTemplate;
-    private final MovieRepository movieRepository;
     private final PeopleRepository peopleRepository;
     private final MoviePeopleRepository moviePeopleRepository;
 
 
-    public PeopleService(RestTemplate restTemplate, MovieRepository movieRepository, PeopleRepository peopleRepository, MoviePeopleRepository moviePeopleRepository) {
+    public PeopleService(RestTemplate restTemplate, PeopleRepository peopleRepository, MoviePeopleRepository moviePeopleRepository) {
         this.restTemplate = restTemplate;
-        this.movieRepository = movieRepository;
         this.peopleRepository = peopleRepository;
         this.moviePeopleRepository = moviePeopleRepository;
     }
