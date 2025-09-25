@@ -46,14 +46,10 @@ public class AuthService {
         GoogleIdToken.Payload payload = idToken.getPayload();
 
         String email = payload.getEmail();
-        String name = (String) payload.get("name");
-        String gender = (String) payload.get("gender");
-        String birthdate = (String) payload.get("birthdate");
 
         log.info("Verified Google ID Token for email: " + email);
 
         User user = userRepository.findByEmail(email);
-
 
         String accessToken = jwtTokenProvider.generateToken(user);
         return new AuthResponse(accessToken);
