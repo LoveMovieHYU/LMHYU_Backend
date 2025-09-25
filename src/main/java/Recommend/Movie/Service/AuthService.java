@@ -1,31 +1,32 @@
-package Recommend.Movie.Login.Service;
+package Recommend.Movie.Service;
 
 
-import Recommend.Movie.Login.Util.JwtTokenProvider;
+import Recommend.Movie.Domain.User;
+import Recommend.Movie.Util.JwtTokenProvider;
+import Recommend.Movie.Repository.UserRepository;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
-import Recommend.Movie.Login.Domain.LoginUser;
-import Recommend.Movie.Login.DTO.AuthResponse;
-import Recommend.Movie.Login.Repository.LoginUserRepository;
+import Recommend.Movie.DTO.AuthResponse;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.Base64;
 import java.util.Collections;
 
 @Service
+@Slf4j
 public class AuthService {
 
     @Value("${google.client-id}")
     private String googleClientId;
-    private final LoginUserRepository loginUserRepository;
+    private final UserRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
 
-    public AuthService(LoginUserRepository loginUserRepository, JwtTokenProvider jwtTokenProvider) {
-        this.loginUserRepository = loginUserRepository;
+    public AuthService(UserRepository userRepository, JwtTokenProvider jwtTokenProvider) {
+        this.userRepository = userRepository;
         this.jwtTokenProvider = jwtTokenProvider;
     }
 
@@ -49,18 +50,12 @@ public class AuthService {
         String gender = (String) payload.get("gender");
         String birthdate = (String) payload.get("birthdate");
 
-        System.out.println("Verified Email: " + email);
-        System.out.println("Verified Name: " + name);
-        System.out.println("Verified Gender: " + gender);
-        System.out.println("Verified Birthdate: " + birthdate);
+        log.info("Verified Google ID Token for email: " + email);
 
-        LoginUser loginUser = loginUserRepository.findByEmail(email)
-                .orElseGet(() -> {
-                    LoginUser newLoginUser = new LoginUser(email, name, gender, birthdate);
-                    return loginUserRepository.save(newLoginUser);
-                });
+        User user = userRepository.findByEmail(email);
 
-        String accessToken = jwtTokenProvider.generateToken(loginUser);
+
+        String accessToken = jwtTokenProvider.generateToken(user);
         return new AuthResponse(accessToken);
     }
 

@@ -1,5 +1,6 @@
-package Recommend.Movie.Login.Util;
+package Recommend.Movie.Util;
 
+import Recommend.Movie.Domain.User;
 import Recommend.Movie.Login.Domain.LoginUser;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -22,9 +23,9 @@ public class JwtTokenProvider {
     }
 
     // User 정보를 받아 JWT 토큰 생성
-    public String generateToken(LoginUser loginUser) {
-        Claims claims = Jwts.claims().setSubject(loginUser.getEmail());
-        claims.put("name", loginUser.getName());
+    public String generateToken(User user) {
+        Claims claims = Jwts.claims().setSubject(user.getEmail());
+        claims.put("name", user.getName());
 
         Date now = new Date();
         Date validity = new Date(now.getTime() + validityInMilliseconds);

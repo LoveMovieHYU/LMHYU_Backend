@@ -1,4 +1,4 @@
-package Recommend.Movie.Login.DTO;
+package Recommend.Movie.DTO;
 
 public class GoogleLoginRequest {
     private String idToken;

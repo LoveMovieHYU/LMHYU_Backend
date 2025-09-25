@@ -1,8 +1,8 @@
-package Recommend.Movie.Login.Controller;
+package Recommend.Movie.Controller;
 
-import Recommend.Movie.Login.DTO.AuthResponse;
-import Recommend.Movie.Login.DTO.GoogleLoginRequest;
-import Recommend.Movie.Login.Service.AuthService;
+import Recommend.Movie.DTO.AuthResponse;
+import Recommend.Movie.DTO.GoogleLoginRequest;
+import Recommend.Movie.Service.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
