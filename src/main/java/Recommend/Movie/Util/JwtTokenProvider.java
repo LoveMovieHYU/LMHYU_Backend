@@ -1,7 +1,6 @@
 package Recommend.Movie.Util;
 
 import Recommend.Movie.Domain.User;
-import Recommend.Movie.Login.Domain.LoginUser;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
