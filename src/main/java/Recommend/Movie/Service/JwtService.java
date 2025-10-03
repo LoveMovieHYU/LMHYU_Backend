@@ -32,21 +32,16 @@ public class JwtService {
             throw new RuntimeException("유효하지 않은 refreshToken입니다.");
         }
 
-        // 2. DB에 저장된 토큰인지 (화이트리스트) 확인
         if (!existsRefresh(refreshToken)) {
             throw new RuntimeException("DB에 존재하지 않는 refreshToken입니다.");
         }
 
-        // 3. 토큰에서 사용자 정보 추출
         String name = JWTUtil.getUsername(refreshToken);
         String role = JWTUtil.getRole(refreshToken);
 
-        // 4. 새로운 Access Token과 Refresh Token 생성
         String newAccessToken = JWTUtil.createJWT(name, role, true);
         String newRefreshToken = JWTUtil.createJWT(name, role, false);
 
-        // 5. 기존 Refresh 토큰을 DB에서 삭제하고, 새 Refresh 토큰을 저장/업데이트
-        // 이렇게 하면 항상 사용자당 최신 토큰 1개만 유지됩니다.
         removeRefresh(refreshToken);
         addRefresh(name, newRefreshToken);
 

@@ -1,6 +1,5 @@
 package Recommend.Movie.Domain;
 
-import Recommend.Movie.DTO.UserRequestDTO;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -21,6 +20,8 @@ public class User {
 
     @Column(nullable = false, unique = true)
     private String name;
+
+    private String providerId;
 
     @Column(nullable = false)
     private String email;
@@ -49,9 +50,5 @@ public class User {
         if (this.createAt == null) {
             this.createAt = LocalDate.now();
         }
-    }
-    public void updateUser(UserRequestDTO dto) {
-        this.email = dto.getEmail();
-        this.name = dto.getName();
     }
 }

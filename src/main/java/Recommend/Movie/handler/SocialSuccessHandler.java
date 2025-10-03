@@ -1,7 +1,6 @@
 package Recommend.Movie.handler;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import Recommend.Movie.Service.JwtService;

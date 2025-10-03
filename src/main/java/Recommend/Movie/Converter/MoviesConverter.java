@@ -1,6 +1,6 @@
 package Recommend.Movie.Converter;
 
-import Recommend.Movie.DTO.MovieDetailDTO;
+import Recommend.Movie.DTO.TmdbDTO.MovieDetailDTO;
 import Recommend.Movie.Domain.Movie;
 
 import java.util.Objects;

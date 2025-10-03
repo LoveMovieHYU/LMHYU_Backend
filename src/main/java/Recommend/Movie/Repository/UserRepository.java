@@ -8,17 +8,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 
 @Repository
-// 변경점 1: JpaRepository<User, String> -> JpaRepository<User, Integer>
 public interface UserRepository extends JpaRepository<User, Integer> {
 
-    // 변경점 2: 모든 메소드의 ByUsername -> ByName 으로 변경
-    Boolean existsByName(String name);
-    Optional<User> findByNameAndIsLockAndIsSocial(String name, Boolean isLock, Boolean isSocial);
-    Optional<User> findByNameAndIsSocial(String name, Boolean social);
-    Optional<User> findByNameAndIsLock(String name, Boolean isLock);
+    User findByUserId(int userId);
 
-    @Transactional
-    void deleteByName(String name);
-
-    Optional<User> findByName(String name);
+    Optional<User> findByProviderIdAndIsSocial(String providerId, Boolean social);
 }

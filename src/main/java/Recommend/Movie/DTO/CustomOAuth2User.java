@@ -13,8 +13,8 @@ public class CustomOAuth2User implements OAuth2User {
     private final String name;
 
     public CustomOAuth2User(Map<String, Object> attributes,
-                            Collection<? extends GrantedAuthority> authorities,
-                            String name) {
+                            Collection<? extends GrantedAuthority> authorities, String name)
+    {
         this.attributes = attributes;
         this.authorities = authorities;
         this.name = name;

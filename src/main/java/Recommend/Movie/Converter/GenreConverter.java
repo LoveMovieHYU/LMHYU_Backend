@@ -1,6 +1,6 @@
 package Recommend.Movie.Converter;
 
-import Recommend.Movie.DTO.GenreDTO;
+import Recommend.Movie.DTO.TmdbDTO.GenreDTO;
 import Recommend.Movie.Domain.Genre;
 
 public class GenreConverter {
