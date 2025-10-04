@@ -10,6 +10,7 @@ public class UserConverter {
         return User.builder()
                 .name(dto.getName())
                 .providerId(dto.getProviderId())
+                .email(dto.getEmail())
                 .socialProviderType(dto.getSocialProviderType())
                 .isLock(dto.isLock())
                 .isSocial(dto.isSocial())

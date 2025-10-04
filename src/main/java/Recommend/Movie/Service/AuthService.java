@@ -1,6 +1,8 @@
 package Recommend.Movie.Service;
 
+import Recommend.Movie.Converter.UserConverter;
 import Recommend.Movie.DTO.JWTResponseDTO;
+import Recommend.Movie.DTO.UserDTO.LoginDTO;
 import Recommend.Movie.Domain.SocialProviderType;
 import Recommend.Movie.Domain.User;
 import Recommend.Movie.Domain.UserRoleType;
@@ -51,27 +53,36 @@ public class AuthService {
             // 2. 기본 사용자 정보 추출
             String googleUniqueId = payload.getSubject();
             String email = payload.getEmail();
-            String nameInDb = "GOOGLE_" + googleUniqueId;
-            log.info(">>>>>> 기본 사용자 정보 추출 완료: {}", nameInDb);
+            String providerId = "GOOGLE_" + googleUniqueId;
+            String name = (String) payload.get("name");
+            log.info(">>>>>> 기본 사용자 정보 추출 완료: {}", name);
 
             // --- People API 호출 및 추가 정보 처리 로직 전체 삭제 ---
 
-            // 3. DB에서 사용자 조회, 없으면 새로 생성 (신규 회원가입)
-            User user = userRepository.findByName(nameInDb).orElseGet(() -> {
-                log.info(">>>>>> 신규 사용자입니다. DB에 저장합니다: {}", nameInDb);
-                User newUser = User.builder()
-                        .name(nameInDb)
+            // 3. DB에서 providerId로 사용자 조회, 없으면 새로 생성
+            User user = userRepository.findByProviderIdAndIsSocial(providerId, true).orElseGet(() -> {
+                log.info(">>>>>> 신규 사용자입니다. DTO를 통해 DB에 저장합니다: {}", providerId);
+
+                // --- 요청하신 수정사항 시작 ---
+
+                // 3-1. LoginDTO에 신규 사용자 정보 1차 저장
+                LoginDTO dto = LoginDTO.builder()
+                        .name(name)
+                        .providerId(providerId)
                         .email(email)
                         .isSocial(true)
                         .isLock(false)
                         .socialProviderType(SocialProviderType.GOOGLE)
-                        .roleType(UserRoleType.USER)
-                        // gender, ageGroup, location 필드 제거
+                        .role(UserRoleType.USER)
                         .build();
-                return userRepository.save(newUser);
-            });
 
-            log.info(">>>>>> DB 처리 완료. JWT 생성을 시작합니다.");
+                // 3-2. UserConverter의 toEntity 메소드를 사용해 User 엔티티로 변환
+                User newUser = UserConverter.toEntity(dto);
+
+                // 3-3. 변환된 엔티티를 DB에 저장
+                return userRepository.save(newUser);
+
+            });
 
             // 4. 우리 서비스의 JWT 생성
             String role = user.getRoleType().name();
