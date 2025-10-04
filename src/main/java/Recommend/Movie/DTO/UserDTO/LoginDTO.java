@@ -2,14 +2,12 @@ package Recommend.Movie.DTO.UserDTO;
 
 import Recommend.Movie.Domain.SocialProviderType;
 import Recommend.Movie.Domain.UserRoleType;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
-@RequiredArgsConstructor
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class LoginDTO {
     private String name;

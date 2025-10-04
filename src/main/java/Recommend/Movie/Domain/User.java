@@ -9,14 +9,15 @@ import java.time.LocalDate;
 @Getter
 @Setter
 @Builder
-@NoArgsConstructor // Builder 사용 시 기본 생성자 추가
-@AllArgsConstructor // Builder 사용 시 모든 필드 생성자 추가
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "user")
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    @Column(name = "id")
+    private int userId;
 
     @Column(nullable = false, unique = true)
     private String name;
