@@ -1,4 +1,4 @@
-package Recommend.Movie.DTO;
+package Recommend.Movie.DTO.TmdbDTO;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;

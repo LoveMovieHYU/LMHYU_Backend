@@ -1,8 +1,8 @@
 package Recommend.Movie.Service;
 
-import Recommend.Movie.DTO.CreditsPeople;
-import Recommend.Movie.DTO.CreditsResponse;
-import Recommend.Movie.DTO.PeopleDetailDTO;
+import Recommend.Movie.DTO.TmdbDTO.CreditsPeople;
+import Recommend.Movie.DTO.TmdbDTO.CreditsResponse;
+import Recommend.Movie.DTO.TmdbDTO.PeopleDetailDTO;
 import Recommend.Movie.Domain.Job;
 import Recommend.Movie.Domain.Movie;
 import Recommend.Movie.Domain.MoviePeople;

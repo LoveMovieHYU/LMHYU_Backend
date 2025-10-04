@@ -1,34 +1,49 @@
 package Recommend.Movie.Domain;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDate;
 
 @Entity
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Table(name = "user")
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    @Column(name = "id")
+    private int userId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String name;
+
+    private String providerId;
 
     @Column(nullable = false)
     private String email;
 
-    @Column(nullable = false)
-    private String password;
+    @Column(name = "is_social", nullable = false)
+    private Boolean isSocial;
+
+    @Column(name = "is_lock", nullable = false)
+    private Boolean isLock;
 
     @Enumerated(EnumType.STRING)
-    private Gender gender;
+    @Column(name = "social_provider_type")
+    private SocialProviderType socialProviderType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role_type", nullable = false)
+    private UserRoleType roleType;
 
     private String ageGroup;
     private String location;
+    private String gender;
 
     private LocalDate createAt;
     @PrePersist

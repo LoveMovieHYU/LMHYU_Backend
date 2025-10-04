@@ -1,4 +1,4 @@
-package Recommend.Movie.DTO;
+package Recommend.Movie.DTO.TmdbDTO;
 
 import java.util.List;
 

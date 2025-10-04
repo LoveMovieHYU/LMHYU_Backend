@@ -1,6 +1,6 @@
 package Recommend.Movie.Converter;
 
-import Recommend.Movie.DTO.CompanyDTO;
+import Recommend.Movie.DTO.TmdbDTO.CompanyDTO;
 import Recommend.Movie.Domain.Company;
 
 public class CompanyConverter {

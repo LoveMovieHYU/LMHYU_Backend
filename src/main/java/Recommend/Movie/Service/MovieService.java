@@ -3,7 +3,7 @@ package Recommend.Movie.Service;
 import Recommend.Movie.Converter.CompanyConverter;
 import Recommend.Movie.Converter.GenreConverter;
 import Recommend.Movie.Converter.MoviesConverter;
-import Recommend.Movie.DTO.*;
+import Recommend.Movie.DTO.TmdbDTO.*;
 import Recommend.Movie.Domain.*;
 import Recommend.Movie.Repository.*;
 import jakarta.transaction.Transactional;
