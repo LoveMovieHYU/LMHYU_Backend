@@ -2,6 +2,7 @@ package Recommend.Movie.Controller;
 
 import Recommend.Movie.DTO.GoogleLoginRequest;
 import Recommend.Movie.DTO.JWTResponseDTO;
+import Recommend.Movie.DTO.NaverLoginRequest;
 import Recommend.Movie.Service.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,12 +23,21 @@ public class AuthController {
 
     @PostMapping("/google")
     public ResponseEntity<JWTResponseDTO> loginWithGoogle(@RequestBody GoogleLoginRequest request) {
-        // 👇 try-catch 블록의 catch 부분을 수정합니다.
         try {
             JWTResponseDTO tokens = authService.loginWithGoogle(request.getIdToken());
             return ResponseEntity.ok(tokens);
-        } catch (Exception e) { // 👈 GeneralSecurityException | IOException 대신 Exception 으로 변경
-            // AuthService에서 던진 RuntimeException을 여기서 잡습니다.
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(401).build(); // Unauthorized
+        }
+    }
+
+    @PostMapping("/naver")
+    public ResponseEntity<JWTResponseDTO> loginWithNaver(@RequestBody NaverLoginRequest request) {
+        try {
+            JWTResponseDTO tokens = authService.loginWithNaver(request.getAccessToken());
+            return ResponseEntity.ok(tokens);
+        } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(401).build(); // Unauthorized
         }
