@@ -16,6 +16,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,11 +47,19 @@ public class MovieService {
     @Value("${tmdb.api.base-url}")
     private String baseUrl;
 
-    public void fetchAndSaveAllFromDiscover(int startPage, int endPage, boolean includeAdult){
+
+    /**
+     * discover API를 여러 페이지 돌면서
+     * 아직 DB에 없는 영화들을 WorkItem으로 만들어 리턴
+     */
+    public List<WorkItem> buildWorkItemsFromDiscover(int startPage, int endPage, boolean includeAdult) {
+
         if (startPage < 1 || endPage < startPage) {
             log.error("Invalid page range: startPage={}, endPage={}", startPage, endPage);
             throw new IllegalArgumentException("페이지 범위가 올바르지 않습니다.");
         }
+
+        List<WorkItem> workItems = new ArrayList<>();
 
         for (int page = startPage; page <= endPage; page++) {
             String url = UriComponentsBuilder.fromHttpUrl(baseUrl + "/discover/movie")
@@ -62,8 +71,8 @@ public class MovieService {
                     .queryParam("page", page)
                     .toUriString();
 
-        ResponseEntity<DiscoverResponse> resp = restTemplate.getForEntity(url, DiscoverResponse.class);
-        DiscoverResponse body = resp.getBody();
+            ResponseEntity<DiscoverResponse> resp = restTemplate.getForEntity(url, DiscoverResponse.class);
+            DiscoverResponse body = resp.getBody();
 
             if (body == null || body.results == null || body.results.isEmpty()) {
                 break;
@@ -71,51 +80,69 @@ public class MovieService {
 
             for (DiscoverMovieSummary summary : body.results) {
                 if (summary == null) continue;
-                Optional<Movie> optionalMovie = movieRepository.findByTmdbId((long) summary.getId());
-                if (optionalMovie.isPresent()) {
+
+                // 이미 저장된 영화는 건너뛰기
+                if (movieRepository.findByTmdbId((long) summary.getId()).isPresent()) {
                     continue;
                 }
-                try {
-                    fetchAndSaveMovieDetail(summary.getId());
-                    sleepSilently(Duration.ofMillis(150));
-                } catch (HttpClientErrorException.NotFound nf) {
-                    // 비어있는 ID(404)는 스킵
-                } catch (HttpClientErrorException.TooManyRequests tmr) {
-                    sleepSilently(Duration.ofSeconds(2));
-                    try {
-                        fetchAndSaveMovieDetail(summary.id);
-                    } catch (Exception e2) {
-                        log.error(e2.getMessage(), e2);
-                    }
-                } catch (Exception e) {
-                    log.error("Failed to process summary id={}", summary.getId(), e);
-                }
+
+                workItems.add(new WorkItem(summary.getId()));
             }
 
             if (body.total_pages != null && page >= body.total_pages) {
                 break;
             }
         }
+
+        log.info("TMDB WorkItem count = {}", workItems.size());
+        return workItems;
     }
+
+    /**
+     * TMDB에서 특정 movieId의 상세 정보를 가져오기만 하는 메서드 (DB 저장 없음)
+     */
+    public MovieDetailDTO fetchMovieDetailOnly(int movieId) {
+        String url = UriComponentsBuilder.fromHttpUrl(baseUrl + "/movie/" + movieId)
+                .queryParam("api_key", apikey)
+                .queryParam("language", "ko-KR")
+                .toUriString();
+
+        MovieDetailDTO detailDTO = null;
+        try {
+            detailDTO = restTemplate.getForObject(url, MovieDetailDTO.class);
+        } catch (HttpClientErrorException.NotFound nf) {
+            // 404면 그냥 스킵
+            log.debug("TMDB 404 NotFound movieId={}", movieId);
+            return null;
+        } catch (HttpClientErrorException.TooManyRequests tmr) {
+            // 429면 잠깐 쉬었다가 한 번 더 시도
+            log.warn("TMDB 429 TooManyRequests movieId={}, retry after 2s", movieId);
+            sleepSilently(Duration.ofSeconds(2));
+            try {
+                detailDTO = restTemplate.getForObject(url, MovieDetailDTO.class);
+            } catch (Exception e2) {
+                log.error("Retry after 429 failed. movieId={}", movieId, e2);
+                return null;
+            }
+        }
+
+        if (detailDTO == null) {
+            log.warn("MovieDetailDTO is null. movieId={}", movieId);
+            return null;
+        }
+
+        return detailDTO;
+    }
+
 
     /**
      * 특정 movieId 에 대한 상세정보를 가져와 DB에 저장합니다.
      * - Movie / Genre / Company 및 조인 관계 저장
      */
     @Transactional
-    public void fetchAndSaveMovieDetail(int movieId){
-        String url = UriComponentsBuilder.fromHttpUrl(baseUrl + "/movie/" + movieId)
-                .queryParam("api_key", apikey)
-                .queryParam("language", "ko-KR")
-                .toUriString();
-        MovieDetailDTO detailDTO = null;
-        try {
-            detailDTO = restTemplate.getForObject(url, MovieDetailDTO.class);
-        } catch (HttpClientErrorException.NotFound nf) {
-            return;
-        }
-
-        if(detailDTO == null){
+    public void fetchAndSaveMovieDetail(int movieId) {
+        MovieDetailDTO detailDTO = fetchMovieDetailOnly(movieId);
+        if (detailDTO == null) {
             return;
         }
 
@@ -127,6 +154,7 @@ public class MovieService {
             movieRepository.saveAndFlush(movie);
             peopleService.fetchAndSaveCreditsByMovieId(movie, true);
 
+            // movie-genre 조인
             if (detailDTO.getGenres() != null) {
                 for (GenreDTO genreDTO : detailDTO.getGenres()) {
                     if (genreDTO == null) continue;
@@ -137,6 +165,8 @@ public class MovieService {
                     }
                 }
             }
+
+            // movie-company 조인
             if (detailDTO.getProductionCompanies() != null) {
                 for (CompanyDTO companyDTO : detailDTO.getProductionCompanies()) {
                     if (companyDTO == null) continue;
@@ -147,13 +177,13 @@ public class MovieService {
                     }
                 }
             }
+
         } catch (Exception ex) {
             log.error("Saving movie failed. dtoTmdbId={}, title={}, runtime={}, voteAvg={}, release={}",
                     detailDTO.getTmdbId(), detailDTO.getTitle(), detailDTO.getRuntime(),
                     detailDTO.getVoteAverage(), detailDTO.getReleaseDate(), ex);
             throw ex;
         }
-
     }
 
     private static MovieGenre getMovieGenre(Genre genre, Movie movie) {
