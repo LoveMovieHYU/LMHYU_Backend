@@ -9,6 +9,7 @@ import java.time.LocalDate;
 @Entity
 @Getter
 @Setter
+@Table(name = "people")
 public class People {
 
     @Id
@@ -18,7 +19,7 @@ public class People {
     private String name;
     // 성별 ( 0, 1, 2, 3 )
     private int gender;
-    // 직업, ACTOR, PRODUCER
+    // 직업, ACTOR, DIRECTOR
     @Enumerated(EnumType.STRING)
     private Job job;
     // 생일

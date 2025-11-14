@@ -18,6 +18,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 
 @Service
 @Slf4j
@@ -47,6 +48,8 @@ public class PeopleService {
             log.error("Movie tmdbId is null, cannot fetch credits.");
             return;
         }
+        log.info("[PeopleBatch] START fetch credits. movieId={}, tmdbId={}", movie.getId(), tmdbId);
+
         String creditsUrl = UriComponentsBuilder.fromHttpUrl(baseUrl + "/movie/" + tmdbId + "/credits")
                 .queryParam("api_key", apikey)
                 .queryParam("language", "ko-KR")
@@ -65,16 +68,23 @@ public class PeopleService {
         }
 
         if (credits.getCast() != null) {
-            for (CreditsPeople creditsPeople : credits.getCast()) {
-                upsertPersonAndLink(movie, creditsPeople, "ACTOR", fetchPersonDetail);
-            }
+            credits.getCast().stream()
+                    .sorted(Comparator.comparing(
+                            cp -> cp.getOrder() == null ? Integer.MAX_VALUE : cp.getOrder()
+                    ))
+                    .limit(20) //  상위 20명만
+                    .forEach(cp -> upsertPersonAndLink(movie, cp, "ACTOR", fetchPersonDetail));
         }
 
         if (credits.getCrew() != null) {
             for (CreditsPeople creditsPeople : credits.getCrew()) {
-                upsertPersonAndLink(movie, creditsPeople, "PRODUCER", fetchPersonDetail);
+                if ("Director".equalsIgnoreCase(creditsPeople.getJob())) {
+                    upsertPersonAndLink(movie, creditsPeople, "DIRECTOR", fetchPersonDetail);
+                }
             }
         }
+        log.info("[PeopleBatch] DONE fetch credits. movieId={}, tmdbId={}", movie.getId(), tmdbId);
+
     }
 
     private void upsertPersonAndLink(Movie movie, CreditsPeople creditsPeople,
@@ -102,16 +112,18 @@ public class PeopleService {
            people.setJob(Job.valueOf(jobKor));
         }
 
-        if (fetchDetail && (isNullOrBlank(people.getBiography()) || isNullOrBlank(String.valueOf(people.getBirthDay())))) {
+        if (fetchDetail && (isNullOrBlank(people.getBiography()) || people.getBirthDay() == null)) {
             fillPersonDetail(tmdbPeopleId, people);
         }
         peopleRepository.save(people);
+        log.debug("Updated person: " + people.getName() + " (tmdbId: " + tmdbPeopleId + ")");
         if (!moviePeopleRepository.existsByMovie_IdAndPeople_Id(movie.getId(), tmdbPeopleId)) {
             MoviePeople moviePeople = new MoviePeople();
             moviePeople.setMovie(movie);
             moviePeople.setPeople(people);
             moviePeopleRepository.save(moviePeople);
         }
+        log.debug("Linked person " + people.getName() + " to movie " + movie.getTitle());
     }
 
     private void fillPersonDetail(int peopleId, People people){

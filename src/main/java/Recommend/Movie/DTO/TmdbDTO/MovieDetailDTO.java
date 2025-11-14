@@ -33,7 +33,7 @@ public class MovieDetailDTO {
     private Integer voteCount;
 
     @JsonProperty("original_language")
-    private String OriginalLanguage;
+    private String originalLanguage;
 
     private List<GenreDTO> genres;
 

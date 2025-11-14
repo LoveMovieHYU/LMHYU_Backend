@@ -11,4 +11,7 @@ public class CreditsPeople {
     @JsonProperty("profile_path")
     private String profilePath;
 
+    private String job;  // crew 용
+    private Integer order; // cast 용
+
 }
