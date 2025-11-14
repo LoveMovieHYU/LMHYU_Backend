@@ -47,6 +47,8 @@ public class PeopleService {
             log.error("Movie tmdbId is null, cannot fetch credits.");
             return;
         }
+        log.info("[PeopleBatch] START fetch credits. movieId={}, tmdbId={}", movie.getId(), tmdbId);
+
         String creditsUrl = UriComponentsBuilder.fromHttpUrl(baseUrl + "/movie/" + tmdbId + "/credits")
                 .queryParam("api_key", apikey)
                 .queryParam("language", "ko-KR")
@@ -75,6 +77,8 @@ public class PeopleService {
                 upsertPersonAndLink(movie, creditsPeople, "PRODUCER", fetchPersonDetail);
             }
         }
+        log.info("[PeopleBatch] DONE fetch credits. movieId={}, tmdbId={}", movie.getId(), tmdbId);
+
     }
 
     private void upsertPersonAndLink(Movie movie, CreditsPeople creditsPeople,
@@ -106,12 +110,14 @@ public class PeopleService {
             fillPersonDetail(tmdbPeopleId, people);
         }
         peopleRepository.save(people);
+        log.debug("Updated person: " + people.getName() + " (tmdbId: " + tmdbPeopleId + ")");
         if (!moviePeopleRepository.existsByMovie_IdAndPeople_Id(movie.getId(), tmdbPeopleId)) {
             MoviePeople moviePeople = new MoviePeople();
             moviePeople.setMovie(movie);
             moviePeople.setPeople(people);
             moviePeopleRepository.save(moviePeople);
         }
+        log.debug("Linked person " + people.getName() + " to movie " + movie.getTitle());
     }
 
     private void fillPersonDetail(int peopleId, People people){

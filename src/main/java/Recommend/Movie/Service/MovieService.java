@@ -141,6 +141,7 @@ public class MovieService {
      */
     @Transactional
     public void fetchAndSaveMovieDetail(int movieId) {
+        log.info("[MovieBatch] START fetch & save movie detail. movieId={}", movieId);
         MovieDetailDTO detailDTO = fetchMovieDetailOnly(movieId);
         if (detailDTO == null) {
             return;
@@ -148,7 +149,6 @@ public class MovieService {
 
         saveGenres(detailDTO.getGenres());
         saveCompanies(detailDTO.getProductionCompanies());
-
         try {
             Movie movie = getOrCreateMovieFromDTO(detailDTO);
             movieRepository.saveAndFlush(movie);
@@ -174,9 +174,12 @@ public class MovieService {
                         Company company = companyRepository.getReferenceById(companyDTO.getId());
                         MovieCompany movieCompany = getMovieCompany(company, movie);
                         movieCompanyRepository.save(movieCompany);
+                        log.info("Saving movie-company link: movieId={}, companyId={}", movie.getId(), company.getId());
                     }
                 }
             }
+            log.info("[MovieBatch] DONE movieId={}, tmdbId={}, title={}",
+                    movieId, detailDTO.getTmdbId(), detailDTO.getTitle());
 
         } catch (Exception ex) {
             log.error("Saving movie failed. dtoTmdbId={}, title={}, runtime={}, voteAvg={}, release={}",

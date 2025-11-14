@@ -13,6 +13,7 @@ import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
+import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.support.IteratorItemReader;
@@ -38,16 +39,17 @@ public class TmdbBatch {
     @Bean
     public Job tmdbJob(Step tmdbStep){
         return new JobBuilder("tmdbJob", jobRepository)
+                .listener(new TmdbJobListener())
                 .start(tmdbStep)
                 .build();
     }
 
     @Bean
     public Step tmdbStep(ItemReader<WorkItem> tmdbReader,
-                         ItemProcessor<WorkItem, MovieDetailDTO> tmdbProcessor,
-                         JdbcBatchItemWriter<MovieDetailDTO> tmdbWriter){
+                         ItemProcessor<WorkItem, Integer> tmdbProcessor,
+                         ItemWriter<Integer> tmdbWriter){
         return new StepBuilder("tmdbStep", jobRepository)
-                .<WorkItem, MovieDetailDTO>chunk(1000, transactionManager)
+                .<WorkItem, Integer>chunk(1000, transactionManager)
                 .reader(tmdbReader)
                 .processor(tmdbProcessor)
                 .writer(tmdbWriter)
@@ -70,58 +72,22 @@ public class TmdbBatch {
         int ePage = (endPage != null) ? endPage.intValue() : sPage;
         boolean incAdult = Boolean.parseBoolean(includeAdult);
 
-        log.info("TmdbReader init. startPage={}, endPage={}, includeAdult={}", sPage, ePage, incAdult);
-
         List<WorkItem> items = movieService.buildWorkItemsFromDiscover(sPage, ePage, incAdult);
         return new IteratorItemReader<>(items);
     }
 
     @Bean
     @StepScope
-    public ItemProcessor<WorkItem, MovieDetailDTO> tmdbProcessor(){
-        return item -> {
-            int movieId = item.getMovieId();
-            MovieDetailDTO movieDetailDTO = movieService.fetchMovieDetailOnly(movieId);
-
-            if(movieDetailDTO == null){
-                log.debug("MovieDetailDTO is null for movieId={}", movieId);
-                return null;
-            }
-            return movieDetailDTO;
-        };
+    public ItemProcessor<WorkItem, Integer> tmdbProcessor(){
+        return WorkItem::getMovieId;
     }
 
     @Bean
-    public JdbcBatchItemWriter<MovieDetailDTO> tmdbWriter(){
-        JdbcBatchItemWriter<MovieDetailDTO> writer = new JdbcBatchItemWriter<>();
-        writer.setDataSource(dataDataSource);
-
-        writer.setItemSqlParameterSourceProvider(
-                new BeanPropertyItemSqlParameterSourceProvider<>()
-        );
-
-
-        writer.setSql(
-                "INSERT INTO movie (" +
-                        "tmdb_id, title, overview, original_language, release_date, runtime, " +
-                        "vote_average, vote_count, poster_path, backdrop_path, adult" +
-                        ") VALUES (" +
-                        ":tmdbId, :title, :overview, :originalLanguage, :releaseDate, :runtime, " +
-                        ":voteAverage, :voteCount, :posterPath, :backdropPath, :adult" +
-                        ") ON DUPLICATE KEY UPDATE " +
-                        "title = VALUES(title), " +
-                        "overview = VALUES(overview), " +
-                        "original_language = VALUES(original_language), " +
-                        "release_date = VALUES(release_date), " +
-                        "runtime = VALUES(runtime), " +
-                        "vote_average = VALUES(vote_average), " +
-                        "vote_count = VALUES(vote_count), " +
-                        "poster_path = VALUES(poster_path), " +
-                        "backdrop_path = VALUES(backdrop_path), " +
-                        "adult = VALUES(adult)"
-        );
-
-        writer.afterPropertiesSet();
-        return writer;
+    public ItemWriter<Integer> tmdbWriter(){
+        return items -> {
+            for (Integer movieId : items) {
+                movieService.fetchAndSaveMovieDetail(movieId);
+            }
+        };
     }
 }
