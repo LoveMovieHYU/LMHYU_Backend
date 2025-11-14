@@ -49,7 +49,7 @@ public class TmdbBatch {
                          ItemProcessor<WorkItem, Integer> tmdbProcessor,
                          ItemWriter<Integer> tmdbWriter){
         return new StepBuilder("tmdbStep", jobRepository)
-                .<WorkItem, Integer>chunk(100, transactionManager)
+                .<WorkItem, Integer>chunk(50, transactionManager)
                 .reader(tmdbReader)
                 .processor(tmdbProcessor)
                 .writer(tmdbWriter)
