@@ -10,6 +10,7 @@ import java.util.Set;
 @Entity
 @Getter
 @Setter
+@Table(name = "movie")
 public class Movie {
 
     @Id
@@ -38,6 +39,7 @@ public class Movie {
     private String originalLanguage;
 
     @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
+
     private Set<Review> reviews = new HashSet<>();
 
     @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)

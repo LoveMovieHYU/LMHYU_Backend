@@ -3,6 +3,7 @@ package Recommend.Movie.Domain;
 import jakarta.persistence.*;
 
 @Entity
+@Table(name = "user_movie")
 public class UserMovie {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
