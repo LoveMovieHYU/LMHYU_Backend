@@ -62,13 +62,13 @@ public class TmdbBatch {
     @Bean
     @StepScope
     public IteratorItemReader<WorkItem> tmdbReader(
-            @Value("#{jobParameters['startPage']}") Integer startPage,
-            @Value("#{jobParameters['endPage']}") Integer endPage,
-            @Value("#{jobParameters['includeAdult']}") Boolean includeAdult
+            @Value("#{jobParameters['startPage']}") Long startPage,
+            @Value("#{jobParameters['endPage']}") Long endPage,
+            @Value("#{jobParameters['includeAdult']}") String includeAdult
     ){
-        int sPage = (startPage != null) ? startPage : 1;
-        int ePage = (endPage != null) ? endPage : sPage;
-        boolean incAdult = (includeAdult != null) && includeAdult;
+        int sPage = (startPage != null) ? startPage.intValue() : 1;
+        int ePage = (endPage != null) ? endPage.intValue() : sPage;
+        boolean incAdult = Boolean.parseBoolean(includeAdult);
 
         log.info("TmdbReader init. startPage={}, endPage={}, includeAdult={}", sPage, ePage, incAdult);
 
@@ -91,7 +91,8 @@ public class TmdbBatch {
         };
     }
 
-    public JdbcBatchItemWriter<MovieDetailDTO> tmdbWirter(){
+    @Bean
+    public JdbcBatchItemWriter<MovieDetailDTO> tmdbWriter(){
         JdbcBatchItemWriter<MovieDetailDTO> writer = new JdbcBatchItemWriter<>();
         writer.setDataSource(dataDataSource);
 
