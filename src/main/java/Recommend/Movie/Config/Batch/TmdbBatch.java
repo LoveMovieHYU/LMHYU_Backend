@@ -103,19 +103,19 @@ public class TmdbBatch {
 
         writer.setSql(
                 "INSERT INTO movie (" +
-                        "tmdb_id, title, original_title, release_date, runtime, " +
-                        "vote_average, vote_count, popularity, poster_path, backdrop_path, adult" +
+                        "tmdb_id, title, overview, original_language, release_date, runtime, " +
+                        "vote_average, vote_count, poster_path, backdrop_path, adult" +
                         ") VALUES (" +
-                        ":tmdbId, :title, :originalTitle, :releaseDate, :runtime, " +
-                        ":voteAverage, :voteCount, :popularity, :posterPath, :backdropPath, :adult" +
+                        ":tmdbId, :title, :overview, :OriginalLanguage, :releaseDate, :runtime, " +
+                        ":voteAverage, :voteCount, :posterPath, :backdropPath, :adult" +
                         ") ON DUPLICATE KEY UPDATE " +
                         "title = VALUES(title), " +
-                        "original_title = VALUES(original_title), " +
+                        "overview = VALUES(overview), " +
+                        "original_language = VALUES(original_language), " +
                         "release_date = VALUES(release_date), " +
                         "runtime = VALUES(runtime), " +
                         "vote_average = VALUES(vote_average), " +
                         "vote_count = VALUES(vote_count), " +
-                        "popularity = VALUES(popularity), " +
                         "poster_path = VALUES(poster_path), " +
                         "backdrop_path = VALUES(backdrop_path), " +
                         "adult = VALUES(adult)"
