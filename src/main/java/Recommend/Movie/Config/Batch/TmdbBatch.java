@@ -106,7 +106,7 @@ public class TmdbBatch {
                         "tmdb_id, title, overview, original_language, release_date, runtime, " +
                         "vote_average, vote_count, poster_path, backdrop_path, adult" +
                         ") VALUES (" +
-                        ":tmdbId, :title, :overview, :OriginalLanguage, :releaseDate, :runtime, " +
+                        ":tmdbId, :title, :overview, :originalLanguage, :releaseDate, :runtime, " +
                         ":voteAverage, :voteCount, :posterPath, :backdropPath, :adult" +
                         ") ON DUPLICATE KEY UPDATE " +
                         "title = VALUES(title), " +

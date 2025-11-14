@@ -28,6 +28,8 @@ public class Movie {
     @Column(name = "poster_path")
     private String posterPath;
 
+    @Column(name = "backdrop_path")
+    private String backdropPath;
     private int runtime;
 
     @Column(name = "release_date")
@@ -35,6 +37,9 @@ public class Movie {
 
     @Column(name = "vote_average")
     private double voteAverage;
+
+    @Column(name = "vote_count")
+    private Integer voteCount;
 
     private boolean adult;
 
