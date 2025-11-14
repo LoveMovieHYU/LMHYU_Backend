@@ -17,5 +17,7 @@ public class LoginDTO {
     private SocialProviderType socialProviderType;
     private String email;
     private UserRoleType role;
+    private String ageGroup;
+    private String gender;
 
 }
