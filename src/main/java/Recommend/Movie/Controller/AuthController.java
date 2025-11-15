@@ -24,11 +24,11 @@ public class AuthController {
     @PostMapping("/google")
     public ResponseEntity<JWTResponseDTO> loginWithGoogle(@RequestBody GoogleLoginRequest request) {
         try {
-            JWTResponseDTO tokens = authService.loginWithGoogle(request.getIdToken());
+            JWTResponseDTO tokens = authService.loginWithGoogle(request);
             return ResponseEntity.ok(tokens);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(401).build(); // Unauthorized
+            return ResponseEntity.status(401).build();
         }
     }
 
@@ -39,7 +39,7 @@ public class AuthController {
             return ResponseEntity.ok(tokens);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(401).build(); // Unauthorized
+            return ResponseEntity.status(401).build();
         }
     }
 }

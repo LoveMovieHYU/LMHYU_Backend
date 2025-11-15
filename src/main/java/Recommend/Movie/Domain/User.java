@@ -19,9 +19,10 @@ public class User {
     @Column(name = "id")
     private int userId;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String name;
 
+    @Column(nullable = false, unique = true)
     private String providerId;
 
     @Column(nullable = false)
