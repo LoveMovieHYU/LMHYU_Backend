@@ -15,6 +15,8 @@ public class UserConverter {
                 .isLock(dto.isLock())
                 .isSocial(dto.isSocial())
                 .roleType(dto.getRole())
+                .ageGroup(dto.getAgeGroup())
+                .gender(dto.getGender())
                 .build();
     }
     public static User updateUser(UpdateDTO dto){
