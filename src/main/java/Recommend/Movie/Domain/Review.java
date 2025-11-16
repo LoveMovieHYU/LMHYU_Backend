@@ -19,6 +19,7 @@ public class Review {
     // 평가
     private String comment;
     // 생성시간
+    @Column(name = "create_at")
     private LocalDateTime createAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
