@@ -30,6 +30,9 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 );
 
+        //닉네임 변경검증
+        http.addFilterBefore(new JWTFilter(), UsernamePasswordAuthenticationFilter.class);
+
         // 세션 정책을 STATELESS로 설정 (JWT 인증 방식이므로)
         http
                 .sessionManagement(session -> session
