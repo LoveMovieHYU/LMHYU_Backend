@@ -1,7 +1,7 @@
 package Recommend.Movie.Controller;
 
 import Recommend.Movie.DTO.GoogleLoginRequest;
-import Recommend.Movie.DTO.JWTResponseDTO;
+import Recommend.Movie.DTO.UserDTO.LoginResponseDTO;
 import Recommend.Movie.DTO.NaverLoginRequest;
 import Recommend.Movie.Service.AuthService;
 import org.springframework.http.ResponseEntity;
@@ -22,10 +22,10 @@ public class AuthController {
     }
 
     @PostMapping("/google")
-    public ResponseEntity<JWTResponseDTO> loginWithGoogle(@RequestBody GoogleLoginRequest request) {
+    public ResponseEntity<LoginResponseDTO> loginWithGoogle(@RequestBody GoogleLoginRequest request) {
         try {
-            JWTResponseDTO tokens = authService.loginWithGoogle(request);
-            return ResponseEntity.ok(tokens);
+            LoginResponseDTO response = authService.loginWithGoogle(request);
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(401).build();
@@ -33,10 +33,10 @@ public class AuthController {
     }
 
     @PostMapping("/naver")
-    public ResponseEntity<JWTResponseDTO> loginWithNaver(@RequestBody NaverLoginRequest request) {
+    public ResponseEntity<LoginResponseDTO> loginWithNaver(@RequestBody NaverLoginRequest request) {
         try {
-            JWTResponseDTO tokens = authService.loginWithNaver(request.getAccessToken());
-            return ResponseEntity.ok(tokens);
+            LoginResponseDTO response = authService.loginWithNaver(request.getAccessToken());
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(401).build();
