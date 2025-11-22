@@ -127,4 +127,22 @@ private final JwtService jwtService;
             throw new UserNotFoundExceptionHandler("User not found.");
         }
     }
+
+    @Transactional
+    public void updateNickname(int userId, String newNickname) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다"));
+
+        if (user.getNickname() != null && user.getNickname().equals(newNickname)) {
+            throw new IllegalArgumentException("Nickname is the same");
+        }
+
+        if (userRepository.existsByNickname(newNickname)) {
+            throw new IllegalArgumentException("Nickname is taken");
+        }
+
+        user.setNickname(newNickname);
+    }
 }
+

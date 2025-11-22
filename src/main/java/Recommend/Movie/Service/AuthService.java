@@ -2,13 +2,13 @@ package Recommend.Movie.Service;
 
 import Recommend.Movie.Converter.UserConverter;
 import Recommend.Movie.DTO.GoogleLoginRequest;
-import Recommend.Movie.DTO.JWTResponseDTO;
 import Recommend.Movie.DTO.UserDTO.LoginDTO;
 import Recommend.Movie.Domain.SocialProviderType;
 import Recommend.Movie.Domain.User;
 import Recommend.Movie.Domain.UserRoleType;
 import Recommend.Movie.Repository.UserRepository;
 import Recommend.Movie.Util.JWTUtil;
+import Recommend.Movie.DTO.UserDTO.LoginResponseDTO;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
@@ -53,7 +53,7 @@ public class AuthService {
     }
 
     @Transactional
-    public JWTResponseDTO loginWithGoogle(GoogleLoginRequest request) {
+    public LoginResponseDTO loginWithGoogle(GoogleLoginRequest request) {
         try {
             GoogleIdToken idToken = verifier.verify(request.getIdToken());
             if (idToken == null) {
@@ -65,8 +65,11 @@ public class AuthService {
             String providerId = "GOOGLE_" + googleUniqueId;
             String name = (String) payload.get("name");
 
+            final boolean[] isNewUser = {false};
+
 
             User user = userRepository.findByProviderIdAndIsSocial(providerId, true).orElseGet(() -> {
+                isNewUser[0] = true;
                 Map<String, String> extraInfo = fetchGooglePeopleInfo(request.getAccessToken());
 
                 LoginDTO dto = LoginDTO.builder()
@@ -81,10 +84,10 @@ public class AuthService {
             });
 
 
-            String accessToken = JWTUtil.createJWT(user.getName(), "ROLE_" + user.getRoleType().name(), true);
-            String refreshToken = JWTUtil.createJWT(user.getName(), "ROLE_" + user.getRoleType().name(), false);
-            jwtService.addRefresh(user.getName(), refreshToken);
-            return new JWTResponseDTO(accessToken, refreshToken);
+            String accessToken = JWTUtil.createJWT(String.valueOf(user.getUserId()), "ROLE_" + user.getRoleType().name(), true);
+            String refreshToken = JWTUtil.createJWT(String.valueOf(user.getUserId()), "ROLE_" + user.getRoleType().name(), false);
+            jwtService.addRefresh(String.valueOf(user.getUserId()), refreshToken);
+            return new LoginResponseDTO(user.getUserId(), isNewUser[0], accessToken, refreshToken);
         } catch (Exception e) {
             throw new RuntimeException("Login processing failed", e);
         }
@@ -143,7 +146,7 @@ public class AuthService {
     }
 
     @Transactional
-    public JWTResponseDTO loginWithNaver(String accessToken) {
+    public LoginResponseDTO loginWithNaver(String accessToken) {
         try {
             String response = webClient.get()
                     .uri("https://openapi.naver.com/v1/nid/me")
@@ -172,7 +175,11 @@ public class AuthService {
             String ageGroup = normalizeAgeGroup(rawAgeGroup);
             String gender = normalizeGender(rawGender);
 
+            final boolean[] isNewUser = {false};
+
             User user = userRepository.findByProviderIdAndIsSocial(providerId, true).orElseGet(() -> {
+
+                isNewUser[0] = true;
                 LoginDTO dto = LoginDTO.builder()
                         .name(name).providerId(providerId).email(email)
                         .isSocial(true).isLock(false)
@@ -184,12 +191,12 @@ public class AuthService {
             });
 
 
-            String ourAccessToken = JWTUtil.createJWT(user.getName(), "ROLE_" + user.getRoleType().name(), true);
-            String ourRefreshToken = JWTUtil.createJWT(user.getName(), "ROLE_" + user.getRoleType().name(), false);
-            jwtService.addRefresh(user.getName(), ourRefreshToken);
+            String ourAccessToken = JWTUtil.createJWT(String.valueOf(user.getUserId()), "ROLE_" + user.getRoleType().name(), true);
+            String ourRefreshToken = JWTUtil.createJWT(String.valueOf(user.getUserId()), "ROLE_" + user.getRoleType().name(), false);
+            jwtService.addRefresh(String.valueOf(user.getUserId()), ourRefreshToken);
 
 
-            return new JWTResponseDTO(ourAccessToken, ourRefreshToken);
+            return new LoginResponseDTO(user.getUserId(), isNewUser[0], ourAccessToken, ourRefreshToken);
 
         } catch (Exception e) {
             throw new RuntimeException("Naver login processing failed", e);

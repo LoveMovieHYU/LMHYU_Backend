@@ -22,7 +22,10 @@ public class User {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
+    private String nickname;
+
+    @Column(name = "provider_id", nullable = false, unique = true)
     private String providerId;
 
     @Column(nullable = false)
