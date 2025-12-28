@@ -25,7 +25,7 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(auth -> auth
                         // 새로 만든 구글 로그인 API와 JWT 재발급 API를 인증 없이 허용
-                        .requestMatchers("/api/v1/auth/google", "/jwt/refresh", "/api/v1/auth/naver","/api/movies/**").permitAll()
+                        .requestMatchers("/api/v1/auth/google", "/jwt/refresh", "/api/v1/auth/naver","/api/movies/**","/api/home", "/api/search/**").permitAll()
                         // 그 외 모든 요청은 인증된 사용자만 접근 가능
                         .anyRequest().authenticated()
                 );
