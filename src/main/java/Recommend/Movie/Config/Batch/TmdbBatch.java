@@ -1,8 +1,7 @@
 package Recommend.Movie.Config.Batch;
 
-import Recommend.Movie.DTO.TmdbDTO.MovieDetailDTO;
-import Recommend.Movie.DTO.TmdbDTO.WorkItem;
-import Recommend.Movie.Service.MovieService;
+import Recommend.Movie.Tmdb.Dto.WorkItem;
+import Recommend.Movie.Tmdb.Service.MovieService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -14,8 +13,6 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
-import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.support.IteratorItemReader;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
