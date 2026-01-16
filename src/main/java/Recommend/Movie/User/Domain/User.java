@@ -63,6 +63,10 @@ public class User {
     @Builder.Default
     private List<FeedbackEvent> feedbackEvents = new ArrayList<>();
 
+
+    public void addFeedback(FeedbackEvent feedbackEvent) {
+        this.feedbackEvents.add(feedbackEvent);
+    }
     @PrePersist
     protected void onCreate() {
         if (this.createAt == null) {

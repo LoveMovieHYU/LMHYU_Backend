@@ -1,4 +1,4 @@
-package Recommend.Movie.Movies.Dto;
+package Recommend.Movie.Tmdb.Dto;
 
 import Recommend.Movie.Tmdb.Domain.Job;
 import Recommend.Movie.Tmdb.Domain.Movie;

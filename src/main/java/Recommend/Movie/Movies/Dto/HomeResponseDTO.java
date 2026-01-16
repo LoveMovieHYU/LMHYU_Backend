@@ -7,7 +7,7 @@ import java.util.List;
 
 @Getter
 @Builder
-public class HomeResponse {
+public class HomeResponseDTO {
     private MovieSummaryResponse recommendedMovie; // 상단 큰 이미지의 추천 영화
     private List<GenreSectionResponse> sections;  // 아래로 계속 이어지는 장르별 섹션 리스트
 

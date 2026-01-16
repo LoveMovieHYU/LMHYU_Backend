@@ -1,11 +1,9 @@
 package Recommend.Movie.Movies.Controller;
 
-import Recommend.Movie.Movies.Dto.HomeResponse;
-import Recommend.Movie.Movies.Dto.MovieDetailResponse;
+import Recommend.Movie.Movies.Dto.HomeResponseDTO;
+import Recommend.Movie.Tmdb.Dto.MovieDetailResponse;
 import Recommend.Movie.Movies.Dto.SearchMovieResponse;
-import Recommend.Movie.Movies.Service.MovieHomeService;
-import Recommend.Movie.Movies.Service.MovieResponseService;
-import Recommend.Movie.Movies.Service.MovieSearchService;
+import Recommend.Movie.Movies.Service.MovieService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,17 +15,15 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MovieResponseController {
 
-    private final MovieHomeService movieHomeService;
-    private final MovieResponseService movieService;
-    private final MovieSearchService movieSearchService;
+    private final MovieService movieService;
 
     /**
      * 홈 화면 데이터 조회
      * GET /api/movies/home
      */
     @GetMapping("/home")
-    public ResponseEntity<HomeResponse> getHomeData() {
-        return ResponseEntity.ok(movieHomeService.getHomeData());
+    public ResponseEntity<HomeResponseDTO> getHomeData() {
+        return ResponseEntity.ok(movieService.getHomeData());
     }
 
     /**
@@ -41,12 +37,13 @@ public class MovieResponseController {
 
     /**
      * 영화 검색
-     * GET /api/movies/search
+     * GET /api/movies/search?category=
      */
     @GetMapping("/search")
     public ResponseEntity<List<SearchMovieResponse>> search(
             @RequestParam(defaultValue = "movie") String category,
             @RequestParam(required = false) String query) {
-        return ResponseEntity.ok(movieSearchService.searchByCategory(category, query));
+        return ResponseEntity.ok(movieService.searchByCategory(category, query));
     }
+
 }
