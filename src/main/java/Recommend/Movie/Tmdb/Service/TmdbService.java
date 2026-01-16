@@ -21,7 +21,7 @@ import java.util.List;
 
 @Service
 @Slf4j
-public class MovieService {
+public class TmdbService {
     private final CompanyRepository companyRepository;
     private final MovieCompanyRepository movieCompanyRepository;
     private final RestTemplate restTemplate;
@@ -30,7 +30,7 @@ public class MovieService {
     private final MovieGenreRepository movieGenreRepository;
     private final PeopleService peopleService;
 
-    public MovieService(CompanyRepository companyRepository, MovieCompanyRepository movieCompanyRepository, RestTemplate restTemplate, MovieRepository movieRepository, GenreRepository genreRepository, MovieGenreRepository movieGenreRepository, PeopleService peopleService) {
+    public TmdbService(CompanyRepository companyRepository, MovieCompanyRepository movieCompanyRepository, RestTemplate restTemplate, MovieRepository movieRepository, GenreRepository genreRepository, MovieGenreRepository movieGenreRepository, PeopleService peopleService) {
         this.companyRepository = companyRepository;
         this.movieCompanyRepository = movieCompanyRepository;
         this.restTemplate = restTemplate;
