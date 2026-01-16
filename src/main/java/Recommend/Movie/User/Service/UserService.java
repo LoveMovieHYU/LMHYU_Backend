@@ -1,6 +1,5 @@
 package Recommend.Movie.User.Service;
 
-import Recommend.Movie.Config.Exception.UserNotFoundExceptionHandler;
 import Recommend.Movie.User.Domain.User;
 import Recommend.Movie.User.Dto.UserFindResponseDTO;
 import Recommend.Movie.User.Repository.UserRepository;

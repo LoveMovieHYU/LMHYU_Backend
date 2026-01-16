@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * ◀◀◀ [추가] @Valid 예외를 공통으로 처리하기 위한 핸들러
+ * @Valid 예외를 공통으로 처리하기 위한 핸들러
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {

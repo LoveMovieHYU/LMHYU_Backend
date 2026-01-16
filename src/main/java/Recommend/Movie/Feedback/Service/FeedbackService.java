@@ -1,7 +1,7 @@
 package Recommend.Movie.Feedback.Service;
 
-import Recommend.Movie.Config.Exception.MovieNotFoundExceptionHandler;
-import Recommend.Movie.Config.Exception.UserNotFoundExceptionHandler;
+import Recommend.Movie.Config.Exception.BusinessException;
+import Recommend.Movie.Config.Exception.ErrorCode;
 import Recommend.Movie.Feedback.Converter.FeedBackConverter;
 import Recommend.Movie.Feedback.Domain.FeedbackEvent;
 import Recommend.Movie.Feedback.Dto.TodayEmotionRequestDTO;
@@ -45,11 +45,11 @@ public class FeedbackService {
                                     String userId){
         User user = userRepository.findByUserId(Integer.parseInt(userId));
         if(user == null){
-            throw new UserNotFoundExceptionHandler("가입된 유저가 없습니다.");
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND, "유저를 찾을 수 없습니다.");
         }
         Optional<Movie> movieOptional = movieRepository.findById(movieId);
         if(movieOptional.isEmpty()){
-            throw new MovieNotFoundExceptionHandler("해당 영화는 없습니다.");
+            throw new BusinessException(ErrorCode.MOVIE_NOT_FOUND, "유저를 찾을 수 없습니다.");
         }
         Movie movie = movieOptional.get();
 
