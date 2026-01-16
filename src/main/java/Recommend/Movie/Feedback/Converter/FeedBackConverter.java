@@ -1,7 +1,7 @@
 package Recommend.Movie.Feedback.Converter;
 
 import Recommend.Movie.Feedback.Domain.FeedbackEvent;
-import Recommend.Movie.Movies.Dto.MovieReactionRequestDTO;
+import Recommend.Movie.Feedback.Dto.MovieReactionRequestDTO;
 import Recommend.Movie.Tmdb.Domain.Movie;
 import Recommend.Movie.User.Domain.User;
 

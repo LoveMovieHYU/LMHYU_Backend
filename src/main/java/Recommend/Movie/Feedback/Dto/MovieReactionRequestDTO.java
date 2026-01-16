@@ -1,4 +1,4 @@
-package Recommend.Movie.Movies.Dto;
+package Recommend.Movie.Feedback.Dto;
 
 import Recommend.Movie.Diary.Domain.EmotionTag;
 import Recommend.Movie.Movies.Domain.ReactionType;
