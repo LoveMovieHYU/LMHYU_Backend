@@ -1,12 +1,12 @@
 package Recommend.Movie.User.Dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 
 public record NicknameUpdateRequest(
 
-        @NotBlank(message = "닉네임은 비워둘 수 없습니다.")
-        @Size(min = 3, max = 13, message = "닉네임은 3자 이상 13자 이하로 설정해야 합니다.")
+        @Schema(description = "변경할 새로운 닉네임", example = "movieLover123")
+        @NotBlank(message = "닉네임은 필수입니다.")
         String newNickname
 ) {
 }

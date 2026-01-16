@@ -1,5 +1,7 @@
 package Recommend.Movie.User.Service;
 
+import Recommend.Movie.Config.Exception.BusinessException;
+import Recommend.Movie.Config.Exception.ErrorCode;
 import Recommend.Movie.User.Domain.User;
 import Recommend.Movie.User.Dto.UserFindResponseDTO;
 import Recommend.Movie.User.Repository.UserRepository;
@@ -28,8 +30,8 @@ public class UserService extends DefaultOAuth2UserService {
             jwtService.removeRefreshUser(user.getName());
             // 유저 삭제
             userRepository.delete(user);
-        } catch (UserNotFoundExceptionHandler ex){
-            throw new UserNotFoundExceptionHandler("유저를 찾을 수 없습니다.");
+        } catch (BusinessException ex){
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND, "유저가 없습니다.");
         }
     }
 
@@ -40,8 +42,8 @@ public class UserService extends DefaultOAuth2UserService {
             User user = userRepository.findByUserId(userId);
             UserFindResponseDTO responseDTO = new UserFindResponseDTO(user.getName(), user.getEmail());
             return responseDTO;
-        } catch (UserNotFoundExceptionHandler ex){
-            throw new UserNotFoundExceptionHandler("User not found.");
+        } catch (BusinessException ex){
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND, "유저가 없습니다.");
         }
     }
 
@@ -49,14 +51,14 @@ public class UserService extends DefaultOAuth2UserService {
     public void updateNickname(int userId, String newNickname) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다"));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "유저가 없습니다."));
 
         if (user.getNickname() != null && user.getNickname().equals(newNickname)) {
-            throw new IllegalArgumentException("Nickname is the same");
+            throw new BusinessException(ErrorCode.SAME_NICKNAME, "닉네임이 중복됐습니다.");
         }
 
         if (userRepository.existsByNickname(newNickname)) {
-            throw new IllegalArgumentException("Nickname is taken");
+            throw new BusinessException(ErrorCode.SAME_NICKNAME, "닉네임이 중복됐습니다.");
         }
 
         user.setNickname(newNickname);
