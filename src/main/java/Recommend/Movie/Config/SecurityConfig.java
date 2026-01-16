@@ -24,23 +24,24 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        // 경로별 인가 작업
+        http
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/jwt/refresh", "/api/movies/**","/api/home", "/api/search/**").permitAll() // tmdb 허용
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**").permitAll() // swagger 허용
+                        .requestMatchers("/", "/login-test.html", "/test/**").permitAll() // 테스트 경로 허용
+                        .requestMatchers("/api/v1/auth/**", "/oauth2/**").permitAll() // 소셜 로그인 허용
+                        .requestMatchers("api/feedback/**").permitAll()
+                        // 그 외 모든 요청은 인증된 사용자만 접근 가능
+                        .anyRequest().authenticated()
+                );
+
         // CSRF, Form Login, HTTP Basic 인증 비활성화
         http
                 .csrf(csrf -> csrf.disable())
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable());
 
-        // 경로별 인가 작업
-        http
-                .authorizeHttpRequests(auth -> auth
-                        // 새로 만든 구글 로그인 API와 JWT 재발급 API를 인증 없이 허용
-                        .requestMatchers("/api/v1/auth/google", "/jwt/refresh", "/api/v1/auth/naver","/api/movies/**","/api/home", "/api/search/**").permitAll()
-                        .requestMatchers("/", "/login-test.html", "/test/**").permitAll() // 테스트 경로 허용
-                        .requestMatchers("/api/v1/auth/**", "/oauth2/**").permitAll()
-                        .requestMatchers("api/feedback/**").permitAll()
-                        // 그 외 모든 요청은 인증된 사용자만 접근 가능
-                        .anyRequest().authenticated()
-                );
 
         http
                 .oauth2Login((oauth2) -> oauth2
