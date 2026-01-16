@@ -16,7 +16,7 @@ public class JWTUtil {
     private static final Long refreshTokenExpiresIn = 604800L * 1000; // 7일
 
 
-    @Value("${SECRET_KEY}")
+    @Value("${JWT_SECRET_KEY}")
     public void setSecretKey(String secret) {
         secretKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), Jwts.SIG.HS256.key().build().getAlgorithm());
     }

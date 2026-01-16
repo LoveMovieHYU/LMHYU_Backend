@@ -1,8 +1,7 @@
 package Recommend.Movie.Config.Batch;
 
-import Recommend.Movie.DTO.TmdbDTO.MovieDetailDTO;
-import Recommend.Movie.DTO.TmdbDTO.WorkItem;
-import Recommend.Movie.Service.MovieService;
+import Recommend.Movie.Tmdb.Dto.WorkItem;
+import Recommend.Movie.Tmdb.Service.TmdbService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -14,8 +13,6 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
-import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.support.IteratorItemReader;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,7 +30,7 @@ import java.util.List;
 public class TmdbBatch {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
-    private final MovieService movieService;
+    private final TmdbService tmdbService;
     private final @Qualifier("dataDBSource") DataSource dataDataSource;
 
     @Bean
@@ -72,7 +69,7 @@ public class TmdbBatch {
         int ePage = (endPage != null) ? endPage.intValue() : sPage;
         boolean incAdult = Boolean.parseBoolean(includeAdult);
 
-        List<WorkItem> items = movieService.buildWorkItemsFromDiscover(sPage, ePage, incAdult);
+        List<WorkItem> items = tmdbService.buildWorkItemsFromDiscover(sPage, ePage, incAdult);
         return new IteratorItemReader<>(items);
     }
 
@@ -86,7 +83,7 @@ public class TmdbBatch {
     public ItemWriter<Integer> tmdbWriter(){
         return items -> {
             for (Integer movieId : items) {
-                movieService.fetchAndSaveMovieDetail(movieId);
+                tmdbService.fetchAndSaveMovieDetail(movieId);
             }
         };
     }
