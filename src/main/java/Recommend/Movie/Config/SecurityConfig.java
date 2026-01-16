@@ -2,7 +2,7 @@ package Recommend.Movie.Config;
 
 
 import Recommend.Movie.User.Handler.OAuth2LoginSuccessHandler;
-import Recommend.Movie.User.Service.UserService;
+import Recommend.Movie.User.Service.CustomOAuthService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -15,11 +15,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfig {
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
-    private final UserService userService;
+    private final CustomOAuthService customOAuthService;
 
-    public SecurityConfig(OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler, UserService userService) {
+    public SecurityConfig(OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler, CustomOAuthService customOAuthService) {
         this.oAuth2LoginSuccessHandler = oAuth2LoginSuccessHandler;
-        this.userService = userService;
+        this.customOAuthService = customOAuthService;
     }
 
     @Bean
@@ -45,7 +45,7 @@ public class SecurityConfig {
         http
                 .oauth2Login((oauth2) -> oauth2
                         .userInfoEndpoint((userInfo) -> userInfo
-                                .userService(userService) // 이미 만드신 UserService 등록
+                                .userService(customOAuthService) // 이미 만드신 UserService 등록
                         )
                         .successHandler(oAuth2LoginSuccessHandler) // 위에서 만든 핸들러 등록
                 );

@@ -7,6 +7,7 @@ import Recommend.Movie.Util.JWTUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -64,6 +65,7 @@ public class JwtService {
         } else {
             // 기존 토큰이 없다면, 새로 생성해서 저장
             RefreshEntity entity = RefreshEntity.builder()
+                    .createAt(LocalDateTime.now())
                     .name(name)
                     .refresh(refreshToken)
                     .build();

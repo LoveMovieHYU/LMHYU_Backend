@@ -34,6 +34,7 @@ public class RefreshEntity {
     private LocalDateTime createAt;
 
     public void updateRefresh(String newRefreshToken) {
+        this.createAt = LocalDateTime.now();
         this.refresh = newRefreshToken;
     }
 }

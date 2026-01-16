@@ -3,6 +3,7 @@ package Recommend.Movie.User.Handler;
 import Recommend.Movie.User.Repository.CustomOAuth2User;
 import Recommend.Movie.User.Domain.User;
 import Recommend.Movie.User.Repository.UserRepository;
+import Recommend.Movie.User.Service.JwtService;
 import Recommend.Movie.Util.JWTUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,16 +20,23 @@ import java.io.IOException;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final JWTUtil jwtUtil;
+    private final JwtService jwtService;
     private final UserRepository userRepository;
 
-    @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
-        log.info("OAuth2 Login 성공! 토큰 생성 및 리다이렉트 준비");
+    public OAuth2LoginSuccessHandler(JWTUtil jwtUtil, JwtService jwtService, UserRepository userRepository) {
+        this.jwtUtil = jwtUtil;
+        this.jwtService = jwtService;
+        this.userRepository = userRepository;
+    }
 
+    @Override
+    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
+                                        Authentication authentication) throws IOException, ServletException {
+        log.info("OAuth2 Login 성공! 토큰 생성 및 리다이렉트 준비");
+        String name = authentication.getName();
         CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
 
         String providerId = (String) oAuth2User.getAttributes().get("providerId");
@@ -38,6 +46,10 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
         String accessToken = JWTUtil.createJWT(String.valueOf(user.getUserId()), "ROLE_" + user.getRoleType().name(), true);
         String refreshToken = JWTUtil.createJWT(String.valueOf(user.getUserId()), "ROLE_" + user.getRoleType().name(), false);
+
+        // Refresh 화이트리스트 저장
+        jwtService.addRefresh(name, refreshToken);
+
 
         String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:8080/test/oauth/callback") // 여기를 수정!
                 .queryParam("accessToken", accessToken)

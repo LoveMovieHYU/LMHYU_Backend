@@ -1,4 +1,4 @@
-package Recommend.Movie.Config.Exception.handler;
+package Recommend.Movie.User.Handler;
 
 
 import jakarta.servlet.http.HttpServletRequest;
