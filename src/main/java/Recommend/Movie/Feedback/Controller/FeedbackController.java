@@ -24,7 +24,8 @@ public class FeedbackController {
     @PostMapping("/{movieId}/reaction")
     public ResponseEntity<String> reactionSave(@PathVariable int movieId,
                                                @RequestBody MovieReactionRequestDTO requestDTO,
-                                               Principal principal){
+                                               Principal principal
+                                               ){
         String answer = feedbackService.saveMovieReaction(movieId, requestDTO, principal.getName());
         return ResponseEntity.ok(answer);
     }

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>소셜 로그인 백엔드 테스트</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+        h1 { margin-bottom: 30px; }
+        .btn {
+            display: inline-block;
+            width: 250px;
+            padding: 15px;
+            margin: 10px;
+            text-decoration: none;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            border-radius: 5px;
+        }
+        .google { background-color: #DB4437; }
+        .naver { background-color: #03C75A; }
+    </style>
+</head>
+<body>
+
+<h1>🎬 백엔드 소셜 로그인 테스트</h1>
+
+<a href="/oauth2/authorization/google" class="btn google">구글로 로그인</a>
+<a href="/oauth2/authorization/naver" class="btn naver">네이버로 로그인</a>
+
+</body>
+</html>

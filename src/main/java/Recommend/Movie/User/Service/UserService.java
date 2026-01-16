@@ -1,148 +1,99 @@
 package Recommend.Movie.User.Service;
 
-
 import Recommend.Movie.User.Converter.UserConverter;
-import Recommend.Movie.User.Repository.CustomOAuth2User;
-import Recommend.Movie.User.Dto.LoginDTO;
-import Recommend.Movie.User.Dto.UpdateDTO;
-import Recommend.Movie.User.Dto.UserFindResponseDTO;
 import Recommend.Movie.User.Domain.SocialProviderType;
 import Recommend.Movie.User.Domain.User;
 import Recommend.Movie.User.Domain.UserRoleType;
-import Recommend.Movie.Config.Exception.UserNotFoundExceptionHandler;
+import Recommend.Movie.User.Dto.LoginDTO;
+import Recommend.Movie.User.Dto.UpdateDTO;
+import Recommend.Movie.User.Repository.CustomOAuth2User; // CustomOAuth2User 클래스가 있다고 가정
 import Recommend.Movie.User.Repository.UserRepository;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.security.core.GrantedAuthority;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-
-import java.util.List;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class UserService extends DefaultOAuth2UserService {
 
-private final UserRepository userRepository;
-private final JwtService jwtService;
+    private final UserRepository userRepository;
 
-    public UserService(UserRepository userRepository, JwtService jwtService) {
-        this.userRepository = userRepository;
-        this.jwtService = jwtService;
-    }
-
-    // 자체/소셜 로그인 회원 탈퇴
-    @Transactional
-    public void deleteUser(int userId) {
-        try{
-            User user = userRepository.findByUserId(userId);
-            jwtService.removeRefreshUser(user.getName());
-            // 유저 삭제
-            userRepository.delete(user);
-        } catch (UserNotFoundExceptionHandler ex){
-            throw new UserNotFoundExceptionHandler("유저를 찾을 수 없습니다.");
-        }
-    }
-
-    // 소셜 로그인 (매 로그인시 : 신규 = 가입, 기존 = 업데이트)
+    /**
+     * 소셜 로그인 (구글/네이버 등) 성공 시 호출
+     * 역할: 소셜 유저 정보 로드 -> DB 저장/업데이트 -> SecurityContext에 저장할 Principal 반환
+     */
     @Override
+    @Transactional
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
 
-        // 부모 메소드 호출
         OAuth2User oAuth2User = super.loadUser(userRequest);
 
-        // 데이터
-        Map<String, Object> attributes;
-        List<GrantedAuthority> authorities;
+        String registrationId = userRequest.getClientRegistration().getRegistrationId().toUpperCase(); // GOOGLE, NAVER
 
-        String name;
-        String role = UserRoleType.USER.name();
-        String email;
-        String providerId;
+        String providerId = "";
+        String email = "";
+        String name = "";
+        Map<String, Object> attributes = oAuth2User.getAttributes();
 
-
-        // provider 제공자별 데이터 획득
-        String registrationId = userRequest.getClientRegistration().getRegistrationId().toUpperCase();
-        if (registrationId.equals(SocialProviderType.NAVER.name())) {
-
-            attributes = (Map<String, Object>) oAuth2User.getAttributes().get("response");
-            name = attributes.get("name").toString();
-            providerId = registrationId + "_" + attributes.get("id");
-            email = attributes.get("email").toString();
-
-
-        } else if (registrationId.equals(SocialProviderType.GOOGLE.name())) {
-
-            attributes = (Map<String, Object>) oAuth2User.getAttributes();
-            name = attributes.get("name").toString();
-            providerId = registrationId + "_" + attributes.get("sub");
-            email = attributes.get("email").toString();
-
-
-        } else {
+        if (SocialProviderType.NAVER.name().equals(registrationId)) {
+            Map<String, Object> response = (Map<String, Object>) attributes.get("response");
+            providerId = "NAVER_" + response.get("id");
+            email = String.valueOf(response.get("email"));
+            name = String.valueOf(response.get("name"));
+        }
+        else if (SocialProviderType.GOOGLE.name().equals(registrationId)) {
+            providerId = "GOOGLE_" + attributes.get("sub");
+            email = String.valueOf(attributes.get("email"));
+            name = String.valueOf(attributes.get("name"));
+        }
+        else {
             throw new OAuth2AuthenticationException("지원하지 않는 소셜 로그인입니다.");
         }
 
-        // 데이터베이스 조회 -> 존재하면 업데이트, 없으면 신규 가입
-        Optional<User> entity = userRepository.findByProviderIdAndIsSocial(providerId, true);
-        if (entity.isPresent()) {
-            // role 조회
-            role = entity.get().getRoleType().name();
+        User user = saveOrUpdateUser(providerId, email, name, registrationId);
 
-            // 기존 유저 업데이트
-            UpdateDTO dto = new UpdateDTO(providerId, email);
-            userRepository.save(UserConverter.updateUser(dto));
+        Map<String, Object> finalAttributes = new HashMap<>(attributes);
+        finalAttributes.put("providerId", providerId);
+
+        return new CustomOAuth2User(
+                finalAttributes,
+                Collections.singleton(new SimpleGrantedAuthority("ROLE_" + user.getRoleType().name())),
+                name,
+                providerId
+        );
+    }
+
+    private User saveOrUpdateUser(String providerId, String email, String name, String registrationId) {
+        Optional<User> userOptional = userRepository.findByProviderIdAndIsSocial(providerId, true);
+
+        if (userOptional.isPresent()) {
+            User existingUser = userOptional.get();
+            // existingUser.updateEmail(email);
+            return existingUser;
         } else {
-            LoginDTO dto = LoginDTO.builder()
-                            .name(name)
-                            .providerId(providerId)
-                            .isLock(false)
-                            .isSocial(true)
-                            .socialProviderType(SocialProviderType.valueOf(registrationId))
-                            .role(UserRoleType.USER)
-                            .email(email)
-                            .build();
-            userRepository.save(UserConverter.toEntity(dto));
+            LoginDTO loginDTO = LoginDTO.builder()
+                    .providerId(providerId)
+                    .email(email)
+                    .name(name)
+                    .isSocial(true)
+                    .isLock(false)
+                    .role(UserRoleType.USER)
+                    .socialProviderType(SocialProviderType.valueOf(registrationId))
+                    .build();
+
+            return userRepository.save(UserConverter.toEntity(loginDTO));
         }
-
-        authorities = List.of(new SimpleGrantedAuthority(role));
-
-        return new CustomOAuth2User(attributes, authorities, name);
-    }
-
-
-    // 자체/소셜 유저 정보 조회
-    @Transactional(readOnly = true)
-    public UserFindResponseDTO readUser(int userId) {
-        try{
-            User user = userRepository.findByUserId(userId);
-            UserFindResponseDTO responseDTO = new UserFindResponseDTO(user.getName(), user.getEmail());
-            return responseDTO;
-        } catch (UserNotFoundExceptionHandler ex){
-            throw new UserNotFoundExceptionHandler("User not found.");
-        }
-    }
-
-    @Transactional
-    public void updateNickname(int userId, String newNickname) {
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다"));
-
-        if (user.getNickname() != null && user.getNickname().equals(newNickname)) {
-            throw new IllegalArgumentException("Nickname is the same");
-        }
-
-        if (userRepository.existsByNickname(newNickname)) {
-            throw new IllegalArgumentException("Nickname is taken");
-        }
-
-        user.setNickname(newNickname);
     }
 }
-

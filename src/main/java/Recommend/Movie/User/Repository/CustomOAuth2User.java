@@ -1,5 +1,6 @@
 package Recommend.Movie.User.Repository;
 
+import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
@@ -11,13 +12,16 @@ public class CustomOAuth2User implements OAuth2User {
     private final Map<String, Object> attributes;
     private final Collection<? extends GrantedAuthority> authorities;
     private final String name;
+    @Getter
+    private final String providerId;
 
     public CustomOAuth2User(Map<String, Object> attributes,
-                            Collection<? extends GrantedAuthority> authorities, String name)
+                            Collection<? extends GrantedAuthority> authorities, String name, String providerId)
     {
         this.attributes = attributes;
         this.authorities = authorities;
         this.name = name;
+        this.providerId = providerId;
     }
 
     @Override
