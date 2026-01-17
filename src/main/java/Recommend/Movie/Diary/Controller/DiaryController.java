@@ -10,6 +10,7 @@ import Recommend.Movie.Diary.Service.DiaryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 
+@Tag(name = " 감정일기 API", description = "감정일기 작성 및 조회")
 @RestController
 @RequestMapping("/api/diary")
 public class DiaryController {
@@ -34,7 +36,7 @@ public class DiaryController {
      * 감정일기 작성.
      * POST api/diary/
      * */
-    @Operation(summary = "영화 일기 작성", description = "DB에 존재하는 영화에 대한 감정 일기를 작성합니다.")
+    @Operation(summary = "감정일기 일기 작성", description = "DB에 존재하는 영화에 대한 감정 일기를 작성합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "작성 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청 (필수값 누락, 유효성 검사 실패)"),
@@ -55,7 +57,7 @@ public class DiaryController {
      * 해당 날짜에 적은 일기 프리뷰 조회 가능
      * GET /api/diary/preview?date=2026-01-21
      * */
-    @Operation(summary = "영화 미리보기 조회", description = "해당 날짜에 작성한 일기의 미리보기를 조회합니다." +
+    @Operation(summary = "감정일기 미리보기 조회", description = "해당 날짜에 작성한 일기의 미리보기를 조회합니다." +
             "캘린더에서 해당 날짜를 눌렀을 때, 미리 보기 기능에 사용")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공"),
