@@ -47,10 +47,9 @@ public class FeedbackService {
         if(user == null){
             throw new BusinessException(ErrorCode.USER_NOT_FOUND, "유저를 찾을 수 없습니다.");
         }
-        Movie movie = movieRepository.findById(movieId);
-        if(movie == null){
-            throw new BusinessException(ErrorCode.MOVIE_NOT_FOUND, "해당 영화가 없습니다.");
-        }
+        Movie movie = movieRepository.findById(movieId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MOVIE_NOT_FOUND, "해당 영화가 존재하지 않습니다."));
+
 
         Optional<FeedbackEvent> existingFeedback = feedbackEventRepository.findByUserAndMovie(user, movie);
 
