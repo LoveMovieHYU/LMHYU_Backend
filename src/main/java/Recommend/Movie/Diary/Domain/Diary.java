@@ -3,10 +3,16 @@ package Recommend.Movie.Diary.Domain;
 import Recommend.Movie.Tmdb.Domain.Movie;
 import Recommend.Movie.User.Domain.User;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
 @Entity
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Diary {
 
     @Id
@@ -36,7 +42,7 @@ public class Diary {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "movie_id", nullable = true)
+    @JoinColumn(name = "movie_id")
     private Movie movie;
 
 }
