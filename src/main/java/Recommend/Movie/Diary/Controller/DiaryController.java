@@ -2,6 +2,7 @@ package Recommend.Movie.Diary.Controller;
 
 import Recommend.Movie.Config.Exception.BusinessException;
 import Recommend.Movie.Config.Exception.ErrorCode;
+import Recommend.Movie.Diary.Dto.DiaryMonthResponseDTO;
 import Recommend.Movie.Diary.Dto.DiaryPreviewResponseDTO;
 import Recommend.Movie.Diary.Dto.DiaryRequestDTO;
 import Recommend.Movie.Diary.Dto.DiaryResponseDTO;
@@ -16,6 +17,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/diary")
@@ -41,9 +44,7 @@ public class DiaryController {
     @PostMapping("/")
     public ResponseEntity<DiaryResponseDTO> diaryCreate(@RequestBody @Valid DiaryRequestDTO requestDTO,
                                                         Principal principal) {
-        if(principal == null){
-            throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
-        }
+        verifyPrincipal(principal);
 
         DiaryResponseDTO responseDTO = diaryService.createDiary(requestDTO, Integer.parseInt(principal.getName()));
         return ResponseEntity.ok(responseDTO);
@@ -65,10 +66,35 @@ public class DiaryController {
     @GetMapping("/preview")
     public ResponseEntity<DiaryPreviewResponseDTO> previewDiary(@RequestParam(name = "date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
             , Principal principal) {
+        verifyPrincipal(principal);
+        DiaryPreviewResponseDTO responseDTO = diaryService.getDiaryPreview(date, Integer.parseInt(principal.getName()));
+        return ResponseEntity.ok(responseDTO);
+    }
+
+    /**
+     * 캘린더 뷰에 날짜별 데이터
+     * GET /api/diary/calendar?date=2026-01
+     * */
+    @Operation(summary = "특정 달별 작성한 감정일기 반환", description = "특정 달에 작성된 감정 일기들을 반환합니다." +
+            "캘린더에 작성된 감정일기를 표시할 때 사용합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 (파라미터 타입 불일치)"),
+            @ApiResponse(responseCode = "401", description = "로그인 필요"),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 유저 또는 영화")
+    })
+    @GetMapping("/calendar")
+    public ResponseEntity<List<DiaryMonthResponseDTO>> monthDiaryList(
+            @RequestParam(name = "date") @DateTimeFormat(pattern = "yyyy-MM") YearMonth date,
+            Principal principal){
+        verifyPrincipal(principal);
+        List<DiaryMonthResponseDTO> responseDTO = diaryService.getMontyDiaryList(date, Integer.parseInt(principal.getName()));
+        return ResponseEntity.ok(responseDTO);
+    }
+
+    private static void verifyPrincipal(Principal principal) {
         if (principal == null) {
             throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
         }
-        DiaryPreviewResponseDTO responseDTO = diaryService.getDiaryPreview(date, Integer.parseInt(principal.getName()));
-        return ResponseEntity.ok(responseDTO);
     }
 }

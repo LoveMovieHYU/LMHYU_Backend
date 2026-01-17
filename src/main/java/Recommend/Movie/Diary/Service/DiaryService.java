@@ -4,6 +4,7 @@ import Recommend.Movie.Config.Exception.BusinessException;
 import Recommend.Movie.Config.Exception.ErrorCode;
 import Recommend.Movie.Diary.Converter.DiaryConverter;
 import Recommend.Movie.Diary.Domain.Diary;
+import Recommend.Movie.Diary.Dto.DiaryMonthResponseDTO;
 import Recommend.Movie.Diary.Dto.DiaryPreviewResponseDTO;
 import Recommend.Movie.Diary.Dto.DiaryRequestDTO;
 import Recommend.Movie.Diary.Dto.DiaryResponseDTO;
@@ -15,6 +16,9 @@ import Recommend.Movie.User.Repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.List;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -52,6 +56,19 @@ public class DiaryService {
         Movie movie = diary.getMovie();
         DiaryPreviewResponseDTO responseDTO = DiaryConverter.toDTO(diary, movie);
         return responseDTO;
+    }
+
+    // 해당 달 작성된 감정일기 반환
+    public List<DiaryMonthResponseDTO> getMontyDiaryList(YearMonth date, int userId){
+        User user = getUser(userId);
+        LocalDate startDate = date.atDay(1);
+        LocalDate endDate = date.atEndOfMonth();
+        List<Diary> diaryList = diaryRepository.findAllByUserAndCreateAtBetween(user, startDate, endDate);
+
+        return diaryList.stream()
+                .map(DiaryConverter::toMonthDTO)
+                .collect(Collectors.toList());
+
     }
 
     private User getUser(int userId) {

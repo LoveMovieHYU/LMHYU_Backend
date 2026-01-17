@@ -1,12 +1,14 @@
 package Recommend.Movie.Diary.Converter;
 
 import Recommend.Movie.Diary.Domain.Diary;
+import Recommend.Movie.Diary.Dto.DiaryMonthResponseDTO;
 import Recommend.Movie.Diary.Dto.DiaryPreviewResponseDTO;
 import Recommend.Movie.Diary.Dto.DiaryRequestDTO;
 import Recommend.Movie.Tmdb.Domain.Movie;
 import Recommend.Movie.User.Domain.User;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public class DiaryConverter {
 
@@ -32,4 +34,12 @@ public class DiaryConverter {
                 .rating(diary.getRating())
                 .build();
     }
+
+    public static DiaryMonthResponseDTO toMonthDTO(Diary diary) {
+        return DiaryMonthResponseDTO.builder()
+                .diaryId(diary.getDiaryId())
+                .createAt(diary.getCreateAt())
+                .build();
+    }
+
 }
