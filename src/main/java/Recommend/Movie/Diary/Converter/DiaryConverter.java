@@ -1,6 +1,7 @@
 package Recommend.Movie.Diary.Converter;
 
 import Recommend.Movie.Diary.Domain.Diary;
+import Recommend.Movie.Diary.Dto.DiaryPreviewResponseDTO;
 import Recommend.Movie.Diary.Dto.DiaryRequestDTO;
 import Recommend.Movie.Tmdb.Domain.Movie;
 import Recommend.Movie.User.Domain.User;
@@ -19,6 +20,16 @@ public class DiaryConverter {
                 .user(user)
                 .movie(movie)
                 .movieTitle(movie.getTitle())
+                .build();
+    }
+
+    public static DiaryPreviewResponseDTO toDTO(Diary diary, Movie movie){
+        return DiaryPreviewResponseDTO.builder()
+                .posterPath(movie.getPosterPath())
+                .content(diary.getContent())
+                .movieTitle(movie.getTitle())
+                .createAt(diary.getCreateAt())
+                .rating(diary.getRating())
                 .build();
     }
 }
