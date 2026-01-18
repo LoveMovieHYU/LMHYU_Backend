@@ -67,6 +67,10 @@ public class User {
     public void addFeedback(FeedbackEvent feedbackEvent) {
         this.feedbackEvents.add(feedbackEvent);
     }
+
+    public void addDiary(Diary diary){
+        this.diaryList.add(diary);
+    }
     @PrePersist
     protected void onCreate() {
         if (this.createAt == null) {

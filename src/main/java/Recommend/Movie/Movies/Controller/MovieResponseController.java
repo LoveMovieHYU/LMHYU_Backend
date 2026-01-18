@@ -4,18 +4,23 @@ import Recommend.Movie.Movies.Dto.HomeResponseDTO;
 import Recommend.Movie.Tmdb.Dto.MovieDetailResponse;
 import Recommend.Movie.Movies.Dto.SearchMovieResponse;
 import Recommend.Movie.Movies.Service.MovieService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = " 영화 리스트 조회 API", description = "영화 조회 관련 API")
 @RestController
 @RequestMapping("/api/movies") // 베이스 경로 통합
-@RequiredArgsConstructor
 public class MovieResponseController {
 
     private final MovieService movieService;
+
+    public MovieResponseController(MovieService movieService) {
+        this.movieService = movieService;
+    }
 
     /**
      * 홈 화면 데이터 조회

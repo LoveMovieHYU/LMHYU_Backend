@@ -31,7 +31,8 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**").permitAll() // swagger 허용
                         .requestMatchers("/", "/login-test.html", "/test/**").permitAll() // 테스트 경로 허용
                         .requestMatchers("/api/v1/auth/**", "/oauth2/**").permitAll() // 소셜 로그인 허용
-                        .requestMatchers("api/feedback/**").permitAll()
+                        .requestMatchers("/api/feedback/**").permitAll()
+                        .requestMatchers("/login/**").permitAll()
                         // 그 외 모든 요청은 인증된 사용자만 접근 가능
                         .anyRequest().authenticated()
                 );
