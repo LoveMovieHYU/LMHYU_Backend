@@ -51,18 +51,18 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         jwtService.addRefresh(name, refreshToken);
 
 
-//        String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:8080/test/oauth/callback") // 여기를 수정!
-//                .queryParam("accessToken", accessToken)
-//                .queryParam("refreshToken", refreshToken)
-//                .build().toUriString();
-//
-
-        // 안드로이드 앱으로 리다이렉트 (Deep Link)
-        // 스키마(scheme)는 프론트 팀과 상의해서 정해야 함 (여기선 example-app://callback 으로 가정)
-        String targetUrl = UriComponentsBuilder.fromUriString("example-app://callback")
+        String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:8080/test/oauth/callback") // 여기를 수정!
                 .queryParam("accessToken", accessToken)
                 .queryParam("refreshToken", refreshToken)
                 .build().toUriString();
+
+//
+//        // 안드로이드 앱으로 리다이렉트 (Deep Link)
+//        // 스키마(scheme)는 프론트 팀과 상의해서 정해야 함 (여기선 example-app://callback 으로 가정)
+//        String targetUrl = UriComponentsBuilder.fromUriString("example-app://callback")
+//                .queryParam("accessToken", accessToken)
+//                .queryParam("refreshToken", refreshToken)
+//                .build().toUriString();
 
         log.info("Redirecting to: {}", targetUrl);
 
