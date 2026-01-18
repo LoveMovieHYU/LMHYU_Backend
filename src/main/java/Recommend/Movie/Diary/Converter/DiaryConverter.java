@@ -1,6 +1,7 @@
 package Recommend.Movie.Diary.Converter;
 
 import Recommend.Movie.Diary.Domain.Diary;
+import Recommend.Movie.Diary.Dto.DiaryDetailResponseDTO;
 import Recommend.Movie.Diary.Dto.DiaryMonthResponseDTO;
 import Recommend.Movie.Diary.Dto.DiaryPreviewResponseDTO;
 import Recommend.Movie.Diary.Dto.DiaryRequestDTO;
@@ -39,6 +40,18 @@ public class DiaryConverter {
         return DiaryMonthResponseDTO.builder()
                 .diaryId(diary.getDiaryId())
                 .createAt(diary.getCreateAt())
+                .build();
+    }
+
+    public static DiaryDetailResponseDTO toDetailDTO(Diary diary){
+        return DiaryDetailResponseDTO.builder()
+                .title(diary.getTitle())
+                .content(diary.getContent())
+                .createAt(diary.getCreateAt())
+                .emotionTag(diary.getEmotionTag())
+                .rating(diary.getRating())
+                .posterPath(diary.getMovie().getPosterPath())
+                .movieTitle(diary.getMovie().getTitle())
                 .build();
     }
 

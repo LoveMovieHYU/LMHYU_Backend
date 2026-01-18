@@ -4,10 +4,7 @@ import Recommend.Movie.Config.Exception.BusinessException;
 import Recommend.Movie.Config.Exception.ErrorCode;
 import Recommend.Movie.Diary.Converter.DiaryConverter;
 import Recommend.Movie.Diary.Domain.Diary;
-import Recommend.Movie.Diary.Dto.DiaryMonthResponseDTO;
-import Recommend.Movie.Diary.Dto.DiaryPreviewResponseDTO;
-import Recommend.Movie.Diary.Dto.DiaryRequestDTO;
-import Recommend.Movie.Diary.Dto.DiaryResponseDTO;
+import Recommend.Movie.Diary.Dto.*;
 import Recommend.Movie.Diary.Repository.DiaryRepository;
 import Recommend.Movie.Tmdb.Domain.Movie;
 import Recommend.Movie.Tmdb.Repository.MovieRepository;
@@ -18,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 
@@ -68,6 +66,14 @@ public class DiaryService {
         return diaryList.stream()
                 .map(DiaryConverter::toMonthDTO)
                 .collect(Collectors.toList());
+    }
+    
+    // 일기 상세 조회
+    public DiaryDetailResponseDTO getDetailDiary(int diaryId){
+        Diary diary = diaryRepository.findById(diaryId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.DIARY_NOT_FOUND,"해당 감정일기가 없습니다."));
+
+        return DiaryConverter.toDetailDTO(diary);
 
     }
 

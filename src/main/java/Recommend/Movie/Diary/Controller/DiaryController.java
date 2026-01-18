@@ -2,10 +2,7 @@ package Recommend.Movie.Diary.Controller;
 
 import Recommend.Movie.Config.Exception.BusinessException;
 import Recommend.Movie.Config.Exception.ErrorCode;
-import Recommend.Movie.Diary.Dto.DiaryMonthResponseDTO;
-import Recommend.Movie.Diary.Dto.DiaryPreviewResponseDTO;
-import Recommend.Movie.Diary.Dto.DiaryRequestDTO;
-import Recommend.Movie.Diary.Dto.DiaryResponseDTO;
+import Recommend.Movie.Diary.Dto.*;
 import Recommend.Movie.Diary.Service.DiaryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -91,6 +88,24 @@ public class DiaryController {
             Principal principal){
         verifyPrincipal(principal);
         List<DiaryMonthResponseDTO> responseDTO = diaryService.getMontyDiaryList(date, Integer.parseInt(principal.getName()));
+        return ResponseEntity.ok(responseDTO);
+    }
+
+    /**
+     * 감정일기 상세 보기
+     * GET /api/diary/{diaryId}
+     * */
+    
+    @Operation(summary = "감정일기 상세 보기", description = "특정 감정일기 상세보기 조회 API 입니다." )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 (파라미터 타입 불일치)"),
+            @ApiResponse(responseCode = "401", description = "로그인 필요"),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 감정일기")
+    })
+    @GetMapping("/{diaryId}")
+    public ResponseEntity<DiaryDetailResponseDTO> detailDiary(@PathVariable int diaryId){
+        DiaryDetailResponseDTO responseDTO = diaryService.getDetailDiary(diaryId);
         return ResponseEntity.ok(responseDTO);
     }
 
