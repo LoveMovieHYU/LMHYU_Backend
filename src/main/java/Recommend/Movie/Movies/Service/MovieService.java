@@ -1,6 +1,9 @@
 package Recommend.Movie.Movies.Service;
 
+import Recommend.Movie.Movies.Converter.MovieConverter;
 import Recommend.Movie.Movies.Dto.HomeResponseDTO;
+import Recommend.Movie.Movies.Dto.MovieSearchResponseDTO;
+import Recommend.Movie.Movies.Repository.MovieSpecification;
 import Recommend.Movie.Tmdb.Dto.MovieDetailResponse;
 import Recommend.Movie.Movies.Dto.SearchMovieResponse;
 import Recommend.Movie.Movies.Repository.MovieResponseRepository;
@@ -9,7 +12,11 @@ import Recommend.Movie.Tmdb.Domain.Movie;
 import Recommend.Movie.Tmdb.Repository.GenreRepository;
 import Recommend.Movie.Tmdb.Repository.MovieRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,39 +39,30 @@ public class MovieService {
         this.genreRepository = genreRepository;
     }
 
+    /**
+     * 영화 검색 ( 영화 이름, 배우(감독) 이름 )
+     * */
+    public List<MovieSearchResponseDTO> searchMovies(String keyword, int page){
+
+        int pageNum = (page > 0) ? page - 1 : 0;
+        Pageable pageable = PageRequest.of(pageNum, 10, Sort.by(Sort.Direction.DESC, "releaseDate"));
+
+        Specification<Movie> spec = MovieSpecification.searchByKeyword(keyword);
+
+        Page<Movie> moviePage = movieRepository.findAll(spec, pageable);
+
+        return moviePage.getContent().stream()
+                .map(MovieConverter::toSearchDTO)
+                .collect(Collectors.toList());
+
+    }
+
     public MovieDetailResponse getMovieDetail(int id) {
         Movie movie = movieResponseRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("영화를 찾을 수 없습니다. ID: " + id));
 
         return MovieDetailResponse.from(movie);
     }
-
-    public List<SearchMovieResponse> searchByCategory(String category, String query) {
-        // 검색어가 없으면 인기 작품 반환
-        if (query == null || query.trim().isEmpty()) {
-            return movieResponseRepository.findTop10ByOrderByVoteAverageDesc().stream()
-                    .map(SearchMovieResponse::from).toList();
-        }
-
-        List<Movie> results;
-        // 카테고리에 따른 분기 처리
-        switch (category.toLowerCase()) {
-            case "title":
-                results = movieResponseRepository.findByTitleOnly(query);
-                break;
-            case "person":
-                results = movieResponseRepository.findByPersonOnly(query);
-                break;
-            case "genre":
-                results = movieResponseRepository.findByGenreOnly(query);
-                break;
-            default: // 카테고리 미지정 시 제목 기반 검색 (이전 로직 활용 가능)
-                results = movieResponseRepository.findByTitleOnly(query);
-                break;
-        }
-        return results.stream().map(SearchMovieResponse::from).toList();
-    }
-
     public HomeResponseDTO getHomeData() {
         // 1. 오늘의 추천 영화 (평점 1등 영화)
         Movie recommended = movieResponseRepository.findFirstByOrderByVoteAverageDesc()
