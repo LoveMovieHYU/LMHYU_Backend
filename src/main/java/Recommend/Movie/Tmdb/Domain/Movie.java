@@ -30,6 +30,7 @@ public class Movie {
 
     @Column(name = "backdrop_path")
     private String backdropPath;
+
     private int runtime;
 
     @Column(name = "release_date")

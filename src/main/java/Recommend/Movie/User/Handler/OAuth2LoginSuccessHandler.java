@@ -55,7 +55,6 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 //                .queryParam("accessToken", accessToken)
 //                .queryParam("refreshToken", refreshToken)
 //                .build().toUriString();
-//
 
         // 안드로이드 앱으로 리다이렉트 (Deep Link)
         // 스키마(scheme)는 프론트 팀과 상의해서 정해야 함 (여기선 example-app://callback 으로 가정)

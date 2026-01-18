@@ -1,15 +1,21 @@
 package Recommend.Movie.Movies.Service;
 
+import Recommend.Movie.Config.Exception.BusinessException;
+import Recommend.Movie.Config.Exception.ErrorCode;
+import Recommend.Movie.Movies.Converter.MovieConverter;
 import Recommend.Movie.Movies.Dto.HomeResponseDTO;
+import Recommend.Movie.Movies.Dto.MovieSearchResponseDTO;
+import Recommend.Movie.Movies.Repository.MovieSpecification;
 import Recommend.Movie.Tmdb.Dto.MovieDetailResponse;
-import Recommend.Movie.Movies.Dto.SearchMovieResponse;
-import Recommend.Movie.Movies.Repository.MovieResponseRepository;
 import Recommend.Movie.Tmdb.Domain.Genre;
 import Recommend.Movie.Tmdb.Domain.Movie;
 import Recommend.Movie.Tmdb.Repository.GenreRepository;
 import Recommend.Movie.Tmdb.Repository.MovieRepository;
-import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,52 +28,46 @@ import java.util.stream.Collectors;
 public class MovieService {
 
     private final MovieRepository movieRepository;
-    private final MovieResponseRepository movieResponseRepository;
     private final GenreRepository genreRepository;
 
 
-    public MovieService(MovieRepository movieRepository, MovieResponseRepository movieResponseRepository, GenreRepository genreRepository) {
+    public MovieService(MovieRepository movieRepository, GenreRepository genreRepository) {
         this.movieRepository = movieRepository;
-        this.movieResponseRepository = movieResponseRepository;
         this.genreRepository = genreRepository;
     }
 
-    public MovieDetailResponse getMovieDetail(int id) {
-        Movie movie = movieResponseRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("영화를 찾을 수 없습니다. ID: " + id));
+    /**
+     * 영화 검색 ( 영화 이름, 배우(감독) 이름 )
+     * */
+    public List<MovieSearchResponseDTO> searchMovies(String keyword, int page){
 
-        return MovieDetailResponse.from(movie);
+        int pageNum = (page > 0) ? page - 1 : 0;
+        Pageable pageable = PageRequest.of(pageNum, 10, Sort.by(Sort.Direction.DESC, "releaseDate"));
+
+        Specification<Movie> spec = MovieSpecification.searchByKeyword(keyword);
+
+        Page<Movie> moviePage = movieRepository.findAll(spec, pageable);
+
+        return moviePage.getContent().stream()
+                .map(MovieConverter::toSearchDTO)
+                .collect(Collectors.toList());
+
     }
 
-    public List<SearchMovieResponse> searchByCategory(String category, String query) {
-        // 검색어가 없으면 인기 작품 반환
-        if (query == null || query.trim().isEmpty()) {
-            return movieResponseRepository.findTop10ByOrderByVoteAverageDesc().stream()
-                    .map(SearchMovieResponse::from).toList();
-        }
+    public MovieDetailResponse getMovieDetail(int movieId) {
+        Movie movie = movieRepository.findByIdWithPeople(movieId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MOVIE_NOT_FOUND,"영화를 찾을 수 없습니다."));
 
-        List<Movie> results;
-        // 카테고리에 따른 분기 처리
-        switch (category.toLowerCase()) {
-            case "title":
-                results = movieResponseRepository.findByTitleOnly(query);
-                break;
-            case "person":
-                results = movieResponseRepository.findByPersonOnly(query);
-                break;
-            case "genre":
-                results = movieResponseRepository.findByGenreOnly(query);
-                break;
-            default: // 카테고리 미지정 시 제목 기반 검색 (이전 로직 활용 가능)
-                results = movieResponseRepository.findByTitleOnly(query);
-                break;
-        }
-        return results.stream().map(SearchMovieResponse::from).toList();
+        return MovieConverter.toDetailDTO(movie);
     }
-
+    
+    /**
+     * 임시 활용
+     * 추후 AI 모델 완성되면 해당 AI 와 연동 할 예정
+     * */
     public HomeResponseDTO getHomeData() {
         // 1. 오늘의 추천 영화 (평점 1등 영화)
-        Movie recommended = movieResponseRepository.findFirstByOrderByVoteAverageDesc()
+        Movie recommended = movieRepository.findFirstByOrderByVoteAverageDesc()
                 .orElseThrow(() -> new RuntimeException("영화 데이터가 없습니다."));
 
         // 2. DB의 모든 장르 조회
@@ -76,7 +76,7 @@ public class MovieService {
         // 3. 모든 장르를 순회하며 각 장르별 영화 10개씩 매핑
         List<HomeResponseDTO.GenreSectionResponse> sections = allGenres.stream()
                 .map(genre -> {
-                    List<Movie> movies = movieResponseRepository.findTop10ByGenreName(genre.getName(), PageRequest.of(0, 10));
+                    List<Movie> movies = movieRepository.findTop10ByGenreName(genre.getName(), PageRequest.of(0, 10));
 
                     if (movies.isEmpty()) return null; // 영화가 없는 장르는 제외
 

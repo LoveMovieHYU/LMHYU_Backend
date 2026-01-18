@@ -1,7 +1,7 @@
 package Recommend.Movie.Tmdb.Dto;
 
-import Recommend.Movie.Tmdb.Domain.Job;
-import Recommend.Movie.Tmdb.Domain.Movie;
+import Recommend.Movie.Movies.Dto.PersonDTO;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -10,48 +10,30 @@ import java.util.List;
 @Getter
 @Builder
 public class MovieDetailResponse {
-    private int id;
-    private String title;
-    private String releaseYear; // 2025
-    private String formattedRuntime; // 1h 55m
-    private String overview;
-    private double rating; // 1.7
-    private String posterPath;
-    private String backdropPath;
 
+    @Schema(description = "영화 제목", example = "어벤져스")
+    private String movieTitle;
+
+    @Schema(description = "개봉 해", example = "2025")
+    private String releaseYear;
+
+    @Schema(description = "영화 제목", example = "1h 55m")
+    private String formattedRuntime; // 1h 55m
+
+    @Schema(description = "줄거리", example = "외계인과 싸운다")
+    private String overview;
+    
+    @Schema(description = "영화 평점", example = "4.3")
+    private double rating;
+
+    @Schema(description = "영화 포스터", example = "/adgasdg.png")
+    private String posterPath;
+
+    @Schema(description = "감독", example = "졸란")
     private List<PersonDTO> directors;
+
+    @Schema(description = "배우", example = "고창석")
     private List<PersonDTO> actors;
 
-    public static MovieDetailResponse from(Movie movie) {
-        // Job(Enum)을 기준으로 감독과 배우 분리
-        List<PersonDTO> directors = movie.getPeoples().stream()
-                .map(mp -> mp.getPeople()) // MoviePeople에서 People 객체 추출
-                .filter(p -> p.getJob() == Job.DIRECTOR)
-                .map(PersonDTO::from)
-                .toList();
-
-        List<PersonDTO> actors = movie.getPeoples().stream()
-                .map(mp -> mp.getPeople())
-                .filter(p -> p.getJob() == Job.ACTOR)
-                .map(PersonDTO::from)
-                .toList();
-
-        return MovieDetailResponse.builder()
-                .id(movie.getId())
-                .title(movie.getTitle())
-                .releaseYear(String.valueOf(movie.getReleaseDate().getYear()))
-                .formattedRuntime(formatRuntime(movie.getRuntime()))
-                .overview(movie.getOverview())
-                .rating(movie.getVoteAverage())
-                .posterPath(movie.getPosterPath())
-                .backdropPath(movie.getBackdropPath())
-                .directors(directors)
-                .actors(actors)
-                .build();
-    }
-
-    private static String formatRuntime(int minutes) {
-        return (minutes / 60) + "h " + (minutes % 60) + "m";
-    }
 }
 
