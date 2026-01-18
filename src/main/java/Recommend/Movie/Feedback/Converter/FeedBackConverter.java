@@ -1,6 +1,7 @@
 package Recommend.Movie.Feedback.Converter;
 
 import Recommend.Movie.Feedback.Domain.FeedbackEvent;
+import Recommend.Movie.Feedback.Domain.LikeMovieListResponseDTO;
 import Recommend.Movie.Feedback.Dto.MovieReactionRequestDTO;
 import Recommend.Movie.Tmdb.Domain.Movie;
 import Recommend.Movie.User.Domain.User;
@@ -16,6 +17,13 @@ public class FeedBackConverter {
                 .reactionType(requestDTO.getReactionType())
                 .movie(movie)
                 .user(user)
+                .build();
+    }
+
+    public static LikeMovieListResponseDTO toDTO(Movie movie){
+        return LikeMovieListResponseDTO.builder()
+                .movieId(movie.getId())
+                .movieTitle(movie.getTitle())
                 .build();
     }
 }

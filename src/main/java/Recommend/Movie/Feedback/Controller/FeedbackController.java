@@ -2,6 +2,7 @@ package Recommend.Movie.Feedback.Controller;
 
 import Recommend.Movie.Config.Exception.BusinessException;
 import Recommend.Movie.Config.Exception.ErrorCode;
+import Recommend.Movie.Feedback.Domain.LikeMovieListResponseDTO;
 import Recommend.Movie.Feedback.Service.FeedbackService;
 import Recommend.Movie.Feedback.Dto.MovieReactionRequestDTO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.List;
 
 @Tag(name = " 피드백 & 감정 API", description = "추천된 영화 좋아요/싫어요 반응 및 오늘의 감정 관리 API")
 @RestController
@@ -48,6 +50,23 @@ public class FeedbackController {
         return ResponseEntity.ok(answer);
     }
 
-
+    /**
+     * 좋아요한 영화 조회
+     * GET /api/feedback/likes
+     * */
+    @Operation(summary = "최근 좋아요한 영화 조회", description = "유저가 '좋아요'를 눌렀지만," +
+            " 아직 '감정 일기'를 작성하지 않은 영화 목록을 최근 순으로 반환합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "로그인 필요")
+    })
+    @GetMapping("/likes")
+    public ResponseEntity<List<LikeMovieListResponseDTO>> likeMovieList(Principal principal){
+        if(principal == null){
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        List<LikeMovieListResponseDTO> responseDTO = feedbackService.getLikeMovieList(principal.getName());
+        return ResponseEntity.ok(responseDTO);
+    }
 
 }

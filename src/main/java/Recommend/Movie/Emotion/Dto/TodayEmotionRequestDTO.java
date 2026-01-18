@@ -1,4 +1,4 @@
-package Recommend.Movie.Feedback.Dto;
+package Recommend.Movie.Emotion.Dto;
 
 import Recommend.Movie.Diary.Domain.EmotionTag;
 import io.swagger.v3.oas.annotations.media.Schema;

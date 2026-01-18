@@ -1,7 +1,7 @@
 package Recommend.Movie.Emotion.Service;
 
-import Recommend.Movie.Feedback.Dto.TodayEmotionRequestDTO;
-import Recommend.Movie.Feedback.Dto.TodayEmotionResponseDTO;
+import Recommend.Movie.Emotion.Dto.TodayEmotionRequestDTO;
+import Recommend.Movie.Emotion.Dto.TodayEmotionResponseDTO;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
