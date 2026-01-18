@@ -6,6 +6,10 @@ import Recommend.Movie.Tmdb.Dto.MovieDetailResponse;
 import Recommend.Movie.Movies.Service.MovieService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,21 +28,21 @@ public class MovieResponseController {
     }
 
     /**
-     * 홈 화면 데이터 조회
-     * GET /api/movies/home
-     */
-    @GetMapping("/home")
-    public ResponseEntity<HomeResponseDTO> getHomeData() {
-        return ResponseEntity.ok(movieService.getHomeData());
-    }
-
-    /**
      * 영화 상세 정보 조회
-     * GET /api/movies/{id}
+     * GET /api/movies/{movieId}
      */
-    @GetMapping("/{id}")
-    public ResponseEntity<MovieDetailResponse> getMovieDetail(@PathVariable int id) {
-        return ResponseEntity.ok(movieService.getMovieDetail(id));
+    @Operation(summary = "영화 상세 정보 조회", description = "영화 ID(movieId)를 통해 영화의 제목, 줄거리, 출연진, 평점 등 상세 정보를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = MovieDetailResponse.class))),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 영화 ID (ErrorCode: MOVIE_NOT_FOUND)",
+                    content = @Content),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류",
+                    content = @Content)
+    })
+    @GetMapping("/{movieId}")
+    public ResponseEntity<MovieDetailResponse> getMovieDetail(@PathVariable int movieId) {
+        return ResponseEntity.ok(movieService.getMovieDetail(movieId));
     }
 
     /**
@@ -47,6 +51,14 @@ public class MovieResponseController {
      */
     @Operation(summary = "영화 검색", description = "영화 제목, 배우, 감독 이름으로 영화를 검색합니다." +
             "다음 페이지로 넘어갈 땐 page 파라미터를 +1 하면 됩니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = MovieSearchResponseDTO.class))),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 영화 ID (ErrorCode: MOVIE_NOT_FOUND)",
+                    content = @Content),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류",
+                    content = @Content)
+    })
     @GetMapping("/search")
     public ResponseEntity<List<MovieSearchResponseDTO>> searchMovies(
             @Parameter(description = "검색어 (제목, 배우, 감독)", example = "어벤져스")
@@ -56,6 +68,15 @@ public class MovieResponseController {
 
         List<MovieSearchResponseDTO> result = movieService.searchMovies(keyword, page);
         return ResponseEntity.ok(result);
+    }
+
+    /**
+     * 홈 화면 데이터 조회 ( 임시 활용 )
+     * GET /api/movies/home
+     */
+    @GetMapping("/home")
+    public ResponseEntity<HomeResponseDTO> getHomeData() {
+        return ResponseEntity.ok(movieService.getHomeData());
     }
 
 }

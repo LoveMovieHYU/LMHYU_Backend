@@ -1,4 +1,4 @@
-package Recommend.Movie.Tmdb.Dto;
+package Recommend.Movie.Movies.Dto;
 
 import Recommend.Movie.Tmdb.Domain.People;
 import lombok.Builder;

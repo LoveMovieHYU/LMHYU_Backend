@@ -1,17 +1,16 @@
 package Recommend.Movie.Movies.Service;
 
+import Recommend.Movie.Config.Exception.BusinessException;
+import Recommend.Movie.Config.Exception.ErrorCode;
 import Recommend.Movie.Movies.Converter.MovieConverter;
 import Recommend.Movie.Movies.Dto.HomeResponseDTO;
 import Recommend.Movie.Movies.Dto.MovieSearchResponseDTO;
 import Recommend.Movie.Movies.Repository.MovieSpecification;
 import Recommend.Movie.Tmdb.Dto.MovieDetailResponse;
-import Recommend.Movie.Movies.Dto.SearchMovieResponse;
-import Recommend.Movie.Movies.Repository.MovieResponseRepository;
 import Recommend.Movie.Tmdb.Domain.Genre;
 import Recommend.Movie.Tmdb.Domain.Movie;
 import Recommend.Movie.Tmdb.Repository.GenreRepository;
 import Recommend.Movie.Tmdb.Repository.MovieRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,13 +28,11 @@ import java.util.stream.Collectors;
 public class MovieService {
 
     private final MovieRepository movieRepository;
-    private final MovieResponseRepository movieResponseRepository;
     private final GenreRepository genreRepository;
 
 
-    public MovieService(MovieRepository movieRepository, MovieResponseRepository movieResponseRepository, GenreRepository genreRepository) {
+    public MovieService(MovieRepository movieRepository, GenreRepository genreRepository) {
         this.movieRepository = movieRepository;
-        this.movieResponseRepository = movieResponseRepository;
         this.genreRepository = genreRepository;
     }
 
@@ -57,15 +54,20 @@ public class MovieService {
 
     }
 
-    public MovieDetailResponse getMovieDetail(int id) {
-        Movie movie = movieResponseRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("영화를 찾을 수 없습니다. ID: " + id));
+    public MovieDetailResponse getMovieDetail(int movieId) {
+        Movie movie = movieRepository.findByIdWithPeople(movieId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MOVIE_NOT_FOUND,"영화를 찾을 수 없습니다."));
 
-        return MovieDetailResponse.from(movie);
+        return MovieConverter.toDetailDTO(movie);
     }
+    
+    /**
+     * 임시 활용
+     * 추후 AI 모델 완성되면 해당 AI 와 연동 할 예정
+     * */
     public HomeResponseDTO getHomeData() {
         // 1. 오늘의 추천 영화 (평점 1등 영화)
-        Movie recommended = movieResponseRepository.findFirstByOrderByVoteAverageDesc()
+        Movie recommended = movieRepository.findFirstByOrderByVoteAverageDesc()
                 .orElseThrow(() -> new RuntimeException("영화 데이터가 없습니다."));
 
         // 2. DB의 모든 장르 조회
@@ -74,7 +76,7 @@ public class MovieService {
         // 3. 모든 장르를 순회하며 각 장르별 영화 10개씩 매핑
         List<HomeResponseDTO.GenreSectionResponse> sections = allGenres.stream()
                 .map(genre -> {
-                    List<Movie> movies = movieResponseRepository.findTop10ByGenreName(genre.getName(), PageRequest.of(0, 10));
+                    List<Movie> movies = movieRepository.findTop10ByGenreName(genre.getName(), PageRequest.of(0, 10));
 
                     if (movies.isEmpty()) return null; // 영화가 없는 장르는 제외
 
