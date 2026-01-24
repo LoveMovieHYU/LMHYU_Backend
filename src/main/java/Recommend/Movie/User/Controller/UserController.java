@@ -2,6 +2,7 @@ package Recommend.Movie.User.Controller;
 
 import Recommend.Movie.Config.Exception.BusinessException;
 import Recommend.Movie.Config.Exception.ErrorCode;
+import Recommend.Movie.User.Dto.CheckUserResponseDTO;
 import Recommend.Movie.User.Dto.UpdateUserRequestDTO;
 import Recommend.Movie.User.Dto.UserFindResponseDTO;
 import Recommend.Movie.User.Service.UserService;
@@ -78,7 +79,7 @@ public class UserController {
             @ApiResponse(responseCode = "401", description = "로그인 필요"),
             @ApiResponse(responseCode = "404", description = "유저를 찾을 수 없음")
     })
-    @PutMapping(value = "/update")
+    @PutMapping("/update")
     public ResponseEntity<String> updateUser(@Valid @RequestBody UpdateUserRequestDTO requestDTO,
                                                      Principal principal) {
 
@@ -88,6 +89,24 @@ public class UserController {
 
         String response = userService.updateUserInfo(Integer.parseInt(principal.getName()), requestDTO);
         return ResponseEntity.ok(response);
+    }
 
+    /**
+     * 회원 필수 정보(닉네임/생일) 입력 여부 확인
+     * GET /api/user/check-profile
+     * */
+    @Operation(summary = "회원 필수 정보(닉네임/생일) 입력 여부 확인",
+            description = "소셜 로그인 후, 닉네임과 생년월일이 저장되어 있는지 확인합니다. \n" +
+                    "isChecked가 false라면 응답의 missingField를 확인하여 해당 입력 페이지로 이동해야 합니다." +
+                    "isChecked: true $ 메인 화면으로 이동 " +
+                    "isChecked: false  정보 입력 화면으로 이동")
+    @GetMapping("/check-profile")
+    public ResponseEntity<CheckUserResponseDTO> checkUserBirthDayNickName(Principal principal) {
+        if(principal == null){
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+
+        CheckUserResponseDTO responseDTO = userService.checkUserInfo(Integer.parseInt(principal.getName()));
+        return ResponseEntity.ok(responseDTO);
     }
 }
