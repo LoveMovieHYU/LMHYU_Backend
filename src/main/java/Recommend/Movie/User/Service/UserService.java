@@ -3,6 +3,7 @@ package Recommend.Movie.User.Service;
 import Recommend.Movie.Config.Exception.BusinessException;
 import Recommend.Movie.Config.Exception.ErrorCode;
 import Recommend.Movie.User.Domain.User;
+import Recommend.Movie.User.Dto.UpdateUserRequestDTO;
 import Recommend.Movie.User.Dto.UserFindResponseDTO;
 import Recommend.Movie.User.Repository.UserRepository;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,20 +48,18 @@ public class UserService extends DefaultOAuth2UserService {
         }
     }
 
-    @Transactional
-    public void updateNickname(int userId, String newNickname) {
 
+    @Transactional
+    public String updateUserInfo(int userId, UpdateUserRequestDTO requestDTO) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "유저가 없습니다."));
-
-        if (user.getNickname() != null && user.getNickname().equals(newNickname)) {
+        if (user.getNickname() != null && user.getNickname().equals(requestDTO.getNickName())) {
             throw new BusinessException(ErrorCode.SAME_NICKNAME, "닉네임이 중복됐습니다.");
         }
 
-        if (userRepository.existsByNickname(newNickname)) {
-            throw new BusinessException(ErrorCode.SAME_NICKNAME, "닉네임이 중복됐습니다.");
-        }
-
-        user.setNickname(newNickname);
+        user.setBirthday(requestDTO.getBirthday());
+        user.setNickname(requestDTO.getNickName());
+        userRepository.save(user);
+        return "업데이트가 완료됐습니다.";
     }
 }
