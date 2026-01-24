@@ -2,7 +2,8 @@ package Recommend.Movie.User.Controller;
 
 import Recommend.Movie.Config.Exception.BusinessException;
 import Recommend.Movie.Config.Exception.ErrorCode;
-import Recommend.Movie.User.Dto.NicknameUpdateRequest;
+import Recommend.Movie.User.Dto.CheckUserResponseDTO;
+import Recommend.Movie.User.Dto.UpdateUserRequestDTO;
 import Recommend.Movie.User.Dto.UserFindResponseDTO;
 import Recommend.Movie.User.Service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 
-@Tag(name = "유저(마이페이지) API", description = "유저 정보 조회, 닉네임 수정, 회원 탈퇴 API")
+@Tag(name = "유저 API", description = "유저 정보 조회, 닉네임&생년월일 수정, 회원 탈퇴 API")
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
@@ -68,26 +69,44 @@ public class UserController {
 
     /**
      * 닉네임 변경
-     * PUT /api/user/nickname
+     * PUT /api/user/update
      * */
-    @Operation(summary = "닉네임 변경", description = "사용자의 닉네임을 변경합니다. 중복 체크 및 동일 닉네임 방지 로직이 포함되어 있습니다.")
+
+    @Operation(summary = "유저 정보 업데이트", description = "사용자의 닉네임과 생년월일을 변경합니다.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "변경 성공 (Nickname updated successfully.)"),
-            @ApiResponse(responseCode = "400", description = "잘못된 요청 (현재 닉네임과 동일함)"),
+            @ApiResponse(responseCode = "200", description = "변경 성공 "),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 "),
             @ApiResponse(responseCode = "401", description = "로그인 필요"),
-            @ApiResponse(responseCode = "409", description = "충돌 (이미 존재하는 닉네임)"),
             @ApiResponse(responseCode = "404", description = "유저를 찾을 수 없음")
     })
-    @PutMapping(value = "/nickname")
-    public ResponseEntity<String> updateUserNickname(@Valid @RequestBody NicknameUpdateRequest request,
+    @PutMapping("/update")
+    public ResponseEntity<String> updateUser(@Valid @RequestBody UpdateUserRequestDTO requestDTO,
                                                      Principal principal) {
 
         if(principal == null){
             throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
         }
 
-        userService.updateNickname(Integer.parseInt(principal.getName()), request.newNickname());
-        return ResponseEntity.ok("Nickname updated successfully.");
+        String response = userService.updateUserInfo(Integer.parseInt(principal.getName()), requestDTO);
+        return ResponseEntity.ok(response);
+    }
 
+    /**
+     * 회원 필수 정보(닉네임/생일) 입력 여부 확인
+     * GET /api/user/check-profile
+     * */
+    @Operation(summary = "회원 필수 정보(닉네임/생일) 입력 여부 확인",
+            description = "소셜 로그인 후, 닉네임과 생년월일이 저장되어 있는지 확인합니다. \n" +
+                    "isChecked가 false라면 응답의 missingField를 확인하여 해당 입력 페이지로 이동해야 합니다." +
+                    "isChecked: true $ 메인 화면으로 이동 " +
+                    "isChecked: false  정보 입력 화면으로 이동")
+    @GetMapping("/check-profile")
+    public ResponseEntity<CheckUserResponseDTO> checkUserBirthDayNickName(Principal principal) {
+        if(principal == null){
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+
+        CheckUserResponseDTO responseDTO = userService.checkUserInfo(Integer.parseInt(principal.getName()));
+        return ResponseEntity.ok(responseDTO);
     }
 }
