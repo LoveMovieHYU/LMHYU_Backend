@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.security.Principal;
 
 
-@Tag(name = "5. 추천 API", description = "바이오리듬 기반 영화 추천 서비스")
+@Tag(name = "추천 API", description = "바이오리듬 기반 영화 추천 서비스")
 @RestController
 @RequestMapping("/api/recommend/biorhythm")
 public class RecommendController {
