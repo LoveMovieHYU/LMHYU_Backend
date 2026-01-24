@@ -40,12 +40,14 @@ public class RecommendService {
         if (cachedMovies != null) {
             // 캐시 있음: 영화 리스트와 함께 true 반환
             return CheckResponseDTO.builder()
+                    .message("이미 추천 받은 영화가 있습니다.")
                     .isCached(true)
                     .movieList(cachedMovies)
                     .build();
         } else {
             // 캐시 없음: false 반환 (리스트는 null)
             return CheckResponseDTO.builder()
+                    .message("추천 받은 영화가 없습니다.")
                     .isCached(false)
                     .movieList(null)
                     .build();
