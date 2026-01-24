@@ -49,9 +49,7 @@ public class User {
     @Column(name = "role_type", nullable = false)
     private UserRoleType roleType;
 
-    private String ageGroup;
-    private String location;
-    private String gender;
+    private LocalDate birthday;
 
     private LocalDate createAt;
 

@@ -20,6 +20,7 @@ public enum ErrorCode {
 
 
     // service
+    BAD_REQUEST("BAD_REQUEST",HttpStatus.BAD_REQUEST),
     SAME_NICKNAME("SAME_NICKNAME", HttpStatus.CONFLICT),
     USER_NOT_FOUND("USER_NOT_FOUND", HttpStatus.NOT_FOUND),
     MOVIE_NOT_FOUND("MOVIE_NOT_FOUND", HttpStatus.NOT_FOUND),

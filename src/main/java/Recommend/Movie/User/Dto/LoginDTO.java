@@ -4,6 +4,8 @@ import Recommend.Movie.User.Domain.SocialProviderType;
 import Recommend.Movie.User.Domain.UserRoleType;
 import lombok.*;
 
+import java.time.LocalDate;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -17,7 +19,4 @@ public class LoginDTO {
     private SocialProviderType socialProviderType;
     private String email;
     private UserRoleType role;
-    private String ageGroup;
-    private String gender;
-
 }

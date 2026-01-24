@@ -4,6 +4,8 @@ import Recommend.Movie.User.Dto.LoginDTO;
 import Recommend.Movie.User.Dto.UpdateDTO;
 import Recommend.Movie.User.Domain.User;
 
+import java.time.LocalDate;
+
 public class UserConverter {
 
     public static User toEntity(LoginDTO dto){
@@ -15,8 +17,7 @@ public class UserConverter {
                 .isLock(dto.isLock())
                 .isSocial(dto.isSocial())
                 .roleType(dto.getRole())
-                .ageGroup(dto.getAgeGroup())
-                .gender(dto.getGender())
+                .createAt(LocalDate.now())
                 .build();
     }
     public static User updateUser(UpdateDTO dto){
