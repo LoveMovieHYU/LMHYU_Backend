@@ -48,7 +48,6 @@ public class PeopleService {
             log.error("Movie tmdbId is null, cannot fetch credits.");
             return;
         }
-        log.info("[PeopleBatch] START fetch credits. movieId={}, tmdbId={}", movie.getId(), tmdbId);
 
         String creditsUrl = UriComponentsBuilder.fromHttpUrl(baseUrl + "/movie/" + tmdbId + "/credits")
                 .queryParam("api_key", apikey)

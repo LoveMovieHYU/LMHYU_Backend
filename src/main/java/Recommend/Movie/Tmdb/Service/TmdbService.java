@@ -6,11 +6,15 @@ import Recommend.Movie.Tmdb.Converter.MoviesConverter;
 import Recommend.Movie.Tmdb.Domain.*;
 import Recommend.Movie.Tmdb.Dto.*;
 import Recommend.Movie.Tmdb.Repository.*;
-import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -21,6 +25,7 @@ import java.util.List;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class TmdbService {
     private final CompanyRepository companyRepository;
     private final MovieCompanyRepository movieCompanyRepository;
@@ -30,22 +35,14 @@ public class TmdbService {
     private final MovieGenreRepository movieGenreRepository;
     private final PeopleService peopleService;
 
-    public TmdbService(CompanyRepository companyRepository, MovieCompanyRepository movieCompanyRepository, RestTemplate restTemplate, MovieRepository movieRepository, GenreRepository genreRepository, MovieGenreRepository movieGenreRepository, PeopleService peopleService) {
-        this.companyRepository = companyRepository;
-        this.movieCompanyRepository = movieCompanyRepository;
-        this.restTemplate = restTemplate;
-        this.movieRepository = movieRepository;
-        this.genreRepository = genreRepository;
-        this.movieGenreRepository = movieGenreRepository;
-        this.peopleService = peopleService;
-    }
+    private final PlatformTransactionManager transactionManager;
+
 
     @Value("${tmdb.api.key}")
     private String apikey;
 
     @Value("${tmdb.api.base-url}")
     private String baseUrl;
-
 
     /**
      * discover API를 여러 페이지 돌면서
@@ -142,38 +139,47 @@ public class TmdbService {
     public void fetchAndSaveMovieDetail(int movieId) {
         log.info("[MovieBatch] START fetch & save movie detail. movieId={}", movieId);
         MovieDetailDTO detailDTO = fetchMovieDetailOnly(movieId);
-        if (detailDTO == null) {
-            return;
-        }
+        if (detailDTO == null) return;
 
-        saveGenres(detailDTO.getGenres());
-        saveCompanies(detailDTO.getProductionCompanies());
         try {
+            // Movie 저장 (먼저 저장하여 영속 상태로 만듦)
             Movie movie = getOrCreateMovieFromDTO(detailDTO);
-            movieRepository.saveAndFlush(movie);
+            movie = movieRepository.saveAndFlush(movie);
             peopleService.fetchAndSaveCreditsByMovieId(movie, true);
 
-            // movie-genre 조인
+            // Genre 처리
             if (detailDTO.getGenres() != null) {
                 for (GenreDTO genreDTO : detailDTO.getGenres()) {
                     if (genreDTO == null) continue;
-                    if (!movieGenreRepository.existsByMovie_IdAndGenre_Id(movie.getId(), genreDTO.getId())) {
-                        Genre genre = genreRepository.getReferenceById(genreDTO.getId());
-                        MovieGenre movieGenre = getMovieGenre(genre, movie);
+
+                    // 별도 트랜잭션으로 확실히 저장/조회
+                    Genre detachedGenre = getOrSaveGenre(genreDTO);
+
+                    // 현재 트랜잭션의 영속성 컨텍스트로 다시 불러오기
+                    // 이미 DB에 있는 것이 확실하므로 getReferenceById 사용 가능
+                    Genre managedGenre = genreRepository.getReferenceById(detachedGenre.getId());
+
+                    if (!movieGenreRepository.existsByMovie_IdAndGenre_Id(movie.getId(), managedGenre.getId())) {
+                        MovieGenre movieGenre = getMovieGenre(managedGenre, movie);
                         movieGenreRepository.save(movieGenre);
                     }
                 }
             }
 
-            // movie-company 조인
+            // Company 처리
             if (detailDTO.getProductionCompanies() != null) {
                 for (CompanyDTO companyDTO : detailDTO.getProductionCompanies()) {
                     if (companyDTO == null) continue;
-                    if (!movieCompanyRepository.existsByMovie_IdAndCompany_Id(movie.getId(), companyDTO.getId())) {
-                        Company company = companyRepository.getReferenceById(companyDTO.getId());
-                        MovieCompany movieCompany = getMovieCompany(company, movie);
+
+                    // 별도 트랜잭션으로 확실히 저장/조회
+                    Company detachedCompany = getOrSaveCompany(companyDTO);
+
+                    // 현재 트랜잭션으로 다시 불러오기 (영속화)
+                    Company managedCompany = companyRepository.getReferenceById(detachedCompany.getId());
+
+                    if (!movieCompanyRepository.existsByMovie_IdAndCompany_Id(movie.getId(), managedCompany.getId())) {
+                        MovieCompany movieCompany = getMovieCompany(managedCompany, movie);
                         movieCompanyRepository.save(movieCompany);
-                        log.info("Saving movie-company link: movieId={}, companyId={}", movie.getId(), company.getId());
                     }
                 }
             }
@@ -181,11 +187,40 @@ public class TmdbService {
                     movieId, detailDTO.getTmdbId(), detailDTO.getTitle());
 
         } catch (Exception ex) {
-            log.error("Saving movie failed. dtoTmdbId={}, title={}, runtime={}, voteAvg={}, release={}",
-                    detailDTO.getTmdbId(), detailDTO.getTitle(), detailDTO.getRuntime(),
-                    detailDTO.getVoteAverage(), detailDTO.getReleaseDate(), ex);
+            log.error("Saving movie failed...", ex);
             throw ex;
         }
+    }
+
+    private Company getOrSaveCompany(CompanyDTO dto) {
+        // 먼저 조회 시도
+        return companyRepository.findById(dto.getId())
+                .orElseGet(() -> {
+                    // 없으면 별도 트랜잭션으로 저장 시도
+                    TransactionTemplate tt = new TransactionTemplate(transactionManager);
+                    tt.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                    try {
+                        return tt.execute(status -> companyRepository.saveAndFlush(CompanyConverter.toEntity(dto)));
+                    } catch (Exception e) {
+                        // 동시성 문제로 저장이 실패했다면, 누군가 저장한 것이므로 다시 조회
+                        return companyRepository.findById(dto.getId())
+                                .orElseThrow(() -> new IllegalStateException("Company save failed and not found: " + dto.getId()));
+                    }
+                });
+    }
+
+    private Genre getOrSaveGenre(GenreDTO dto) {
+        return genreRepository.findById(dto.getId())
+                .orElseGet(() -> {
+                    TransactionTemplate tt = new TransactionTemplate(transactionManager);
+                    tt.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                    try {
+                        return tt.execute(status -> genreRepository.saveAndFlush(GenreConverter.toEntity(dto)));
+                    } catch (Exception e) {
+                        return genreRepository.findById(dto.getId())
+                                .orElseThrow(() -> new IllegalStateException("Genre save failed and not found: " + dto.getId()));
+                    }
+                });
     }
 
     private static MovieGenre getMovieGenre(Genre genre, Movie movie) {
@@ -202,26 +237,6 @@ public class TmdbService {
         movieCompany.setMovie(movie);
         movie.addCompany(movieCompany);
         return movieCompany;
-    }
-
-    private void saveGenres(List<GenreDTO> genreDTOList){
-        if(genreDTOList == null) return;
-        for(GenreDTO genreDTO : genreDTOList){
-            if(genreDTO == null) continue;
-            if(!genreRepository.existsById(genreDTO.getId())){
-                genreRepository.save(GenreConverter.toEntity(genreDTO));
-            }
-        }
-    }
-
-    private void saveCompanies(List<CompanyDTO> companyDTOList){
-        if(companyDTOList == null) return;
-        for(CompanyDTO companyDTO : companyDTOList){
-            if(companyDTO == null) continue;
-            if(!companyRepository.existsById(companyDTO.getId())){
-                companyRepository.save(CompanyConverter.toEntity(companyDTO));
-            }
-        }
     }
 
     private Movie getOrCreateMovieFromDTO(MovieDetailDTO detailDTO) {
