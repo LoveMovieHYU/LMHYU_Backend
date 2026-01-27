@@ -20,6 +20,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,50 +51,75 @@ public class TmdbService {
      */
     public List<WorkItem> buildWorkItemsFromDiscover(int startPage, int endPage, boolean includeAdult) {
 
-        if (startPage < 1 || endPage < startPage) {
-            log.error("Invalid page range: startPage={}, endPage={}", startPage, endPage);
-            throw new IllegalArgumentException("페이지 범위가 올바르지 않습니다.");
-        }
-
         List<WorkItem> workItems = new ArrayList<>();
+        int currentYear = LocalDate.now().getYear();
+        int startYear = 1990; // 수집 시작 연도 (조절 가능)
 
-        for (int page = startPage; page <= endPage; page++) {
-            String url = UriComponentsBuilder.fromHttpUrl(baseUrl + "/discover/movie")
-                    .queryParam("api_key", apikey)
-                    .queryParam("language", "ko-KR")
-                    .queryParam("sort_by", "popularity.desc")
-                    .queryParam("include_adult", includeAdult)
-                    .queryParam("include_video", false)
-                    .queryParam("page", page)
-                    .toUriString();
+        // 연도별 루프 (1990 ~ 2026)
+        for (int year = startYear; year <= currentYear; year++) {
+            log.info("Collecting movies for YEAR: {}", year);
 
-            ResponseEntity<DiscoverResponse> resp = restTemplate.getForEntity(url, DiscoverResponse.class);
-            DiscoverResponse body = resp.getBody();
+            // 각 연도마다 1페이지부터 최대 페이지(또는 지정된 endPage)까지 조회
+            for (int page = 1; page <= 500; page++) {
 
-            if (body == null || body.results == null || body.results.isEmpty()) {
-                break;
-            }
+                // 요청 URL 생성 (primary_release_year 파라미터 추가)
+                String url = UriComponentsBuilder.fromHttpUrl(baseUrl + "/discover/movie")
+                        .queryParam("api_key", apikey)
+                        .queryParam("language", "ko-KR")
+                        .queryParam("sort_by", "popularity.desc")
+                        .queryParam("include_adult", includeAdult)
+                        .queryParam("include_video", false)
+                        .queryParam("primary_release_year", year) // ★ 핵심: 연도별 조회
+                        .queryParam("page", page)
+                        .toUriString();
 
-            for (DiscoverMovieSummary summary : body.results) {
-                if (summary == null) continue;
+                try {
+                    ResponseEntity<DiscoverResponse> resp = restTemplate.getForEntity(url, DiscoverResponse.class);
+                    DiscoverResponse body = resp.getBody();
 
-                // 이미 저장된 영화는 건너뛰기
-                if (movieRepository.findByTmdbId((long) summary.getId()).isPresent()) {
-                    continue;
+                    if (body == null || body.results == null || body.results.isEmpty()) {
+                        break; // 데이터 없으면 다음 연도로
+                    }
+
+                    for (DiscoverMovieSummary summary : body.results) {
+                        if (summary == null) continue;
+
+                        if (movieRepository.findByTmdbId((long) summary.getId()).isPresent()) {
+                            continue;
+                        }
+
+                        workItems.add(new WorkItem(summary.getId()));
+                    }
+
+                    // 총 페이지 수를 넘어가거나, TMDB 최대 제한(500)에 도달하면 중단
+                    if (body.total_pages != null && page >= body.total_pages) {
+                        break;
+                    }
+
+                    // 너무 빠른 요청 방지 (0.1초 대기)
+                    sleepSilently(Duration.ofMillis(100));
+
+                } catch (HttpClientErrorException e) {
+                    log.error("TMDB API Error for year={}, page={}: {}", year, page, e.getMessage());
+                    // 429(Too Many Requests) 에러일 경우 잠시 대기 후 재시도 로직을 넣거나, 건너뛰기
+                    if (e.getStatusCode().value() == 429) {
+                        log.warn("Rate limit exceeded. Sleeping for 2 seconds...");
+                        sleepSilently(Duration.ofSeconds(2));
+                        page--; // 해당 페이지 다시 시도
+                    } else if (e.getStatusCode().value() == 400 && e.getResponseBodyAsString().contains("Invalid page")) {
+                        // 500페이지 초과 에러 시 루프 탈출
+                        log.warn("Page limit reached for year {}", year);
+                        break;
+                    }
+                } catch (Exception e) {
+                    log.error("Unexpected error for year={}, page={}", year, page, e);
                 }
-
-                workItems.add(new WorkItem(summary.getId()));
-            }
-
-            if (body.total_pages != null && page >= body.total_pages) {
-                break;
             }
         }
 
-        log.info("TMDB WorkItem count = {}", workItems.size());
+        log.info("Total TMDB WorkItems collected: {}", workItems.size());
         return workItems;
     }
-
     /**
      * TMDB에서 특정 movieId의 상세 정보를 가져오기만 하는 메서드 (DB 저장 없음)
      */
