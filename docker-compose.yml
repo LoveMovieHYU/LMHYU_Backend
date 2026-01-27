@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  my-server:
+    container_name: hymv-server
+    image: ${DOCKER_IMAGE_NAME}
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      # [Meta DB] 로컬 도커 컨테이너(meta-db) 연결
+      - MYSQL_META_URL=jdbc:mysql://meta-db:3306/meta_data?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
+      - MYSQL_META_USERNAME=root
+      - MYSQL_META_PASSWORD=${MYSQL_ROOT_PASSWORD}
+
+      # [Main DB] 기존 네이버 클라우드 (외부 IP)
+      - MYSQL_DATA_URL=${MYSQL_DATA_URL}
+      - MYSQL_DATA_USERNAME=${MYSQL_DATA_USERNAME}
+      - MYSQL_DATA_PASSWORD=${MYSQL_DATA_PASSWORD}
+
+      # [Batch Config] 빈 DB이므로 항상 스키마를 새로 생성하도록 설정
+      - BATCH_SCHEMA_INIT=always
+
+      # [Redis & Keys]
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - TMDB_API_KEY=${TMDB_API_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - NAVER_CLIENT_ID=${NAVER_CLIENT_ID}
+      - NAVER_CLIENT_SECRET=${NAVER_CLIENT_SECRET}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+
+      - TZ=Asia/Seoul
+    depends_on:
+      meta-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - hymv-net  # 네트워크 변경
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  # 2. Meta DB (새로운 빈 DB 시작)
+  meta-db:
+    image: mariadb:10.11
+    container_name: hymv-meta-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=meta_data
+      - TZ=Asia/Seoul
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./meta_db_data:/var/lib/mysql
+    networks:
+      - hymv-net
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  # 3. Redis
+  redis:
+    image: redis:alpine
+    container_name: hymv-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis_data:/data
+    networks:
+      - hymv-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+networks:
+  hymv-net:
+    driver: bridge
