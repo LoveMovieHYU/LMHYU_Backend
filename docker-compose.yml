@@ -7,14 +7,13 @@ services:
     ports:
       - "8080:8080"
     env_file:
-      - .env
+      - ./src/main/resources/env.properties
+#      - .env
     environment:
-      # [Meta DB] 로컬 도커 컨테이너(meta-db) 연결
       - MYSQL_META_URL=jdbc:mysql://meta-db:3306/meta_data?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
       - MYSQL_META_USERNAME=root
       - MYSQL_META_PASSWORD=${MYSQL_ROOT_PASSWORD}
 
-      # [Main DB] 기존 네이버 클라우드 (외부 IP)
       - MYSQL_DATA_URL=${MYSQL_DATA_URL}
       - MYSQL_DATA_USERNAME=${MYSQL_DATA_USERNAME}
       - MYSQL_DATA_PASSWORD=${MYSQL_DATA_PASSWORD}
