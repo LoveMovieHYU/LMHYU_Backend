@@ -109,4 +109,20 @@ public class UserController {
         CheckUserResponseDTO responseDTO = userService.checkUserInfo(Integer.parseInt(principal.getName()));
         return ResponseEntity.ok(responseDTO);
     }
+
+
+    /**
+     * 유저 로그아웃
+     * GET /api/user/logout
+     * */
+    @Operation(summary = "유저 로그아웃, 리프레시 토큰 삭제")
+    @GetMapping("/logout")
+    public ResponseEntity<String> logoutUser(Principal principal) {
+        if(principal == null){
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+
+        String response = userService.logoutUser(Integer.parseInt(principal.getName()));
+        return ResponseEntity.ok(response);
+    }
 }

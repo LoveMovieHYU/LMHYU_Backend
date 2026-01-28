@@ -6,6 +6,7 @@ import Recommend.Movie.User.Domain.User;
 import Recommend.Movie.User.Dto.CheckUserResponseDTO;
 import Recommend.Movie.User.Dto.UpdateUserRequestDTO;
 import Recommend.Movie.User.Dto.UserFindResponseDTO;
+import Recommend.Movie.User.Repository.RefreshRepository;
 import Recommend.Movie.User.Repository.UserRepository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -18,10 +19,12 @@ public class UserService extends DefaultOAuth2UserService {
 
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final RefreshRepository refreshRepository;
 
-    public UserService(UserRepository userRepository, JwtService jwtService) {
+    public UserService(UserRepository userRepository, JwtService jwtService, RefreshRepository refreshRepository) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
+        this.refreshRepository = refreshRepository;
     }
 
     // 자체/소셜 로그인 회원 탈퇴
@@ -99,5 +102,13 @@ public class UserService extends DefaultOAuth2UserService {
                 .message("모두 입력이 되어있습니다.")
                 .isChecked(true)
                 .build();
+    }
+
+    public String logoutUser(int userId){
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "유저가 없습니다."));
+
+        refreshRepository.deleteByName(user.getName());
+        return "삭제완료됐습니다.";
     }
 }
