@@ -42,8 +42,6 @@ public class TmdbBatchRunner {
             }
 
             JobParameters params = new JobParametersBuilder()
-                    .addLong("startPage", 0L)
-                    .addLong("endPage", 500L)
                     .addString("includeAdult", "false")
                     .addString("seedVersion", SEED_VERSION)
                     .toJobParameters();

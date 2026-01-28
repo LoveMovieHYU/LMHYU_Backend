@@ -54,6 +54,7 @@ public class TmdbService {
         List<WorkItem> workItems = new ArrayList<>();
         int currentYear = LocalDate.now().getYear();
         int startYear = 1990; // 수집 시작 연도 (조절 가능)
+//        int startYear = 2025;    // (테스트용 - 최근 데이터만 수집)
 
         // 연도별 루프 (1990 ~ 2026)
         for (int year = startYear; year <= currentYear; year++) {
@@ -61,6 +62,7 @@ public class TmdbService {
 
             // 각 연도마다 1페이지부터 최대 페이지(또는 지정된 endPage)까지 조회
             for (int page = 1; page <= 500; page++) {
+//            for (int page = 1; page <= 1; page++) {      // (테스트용 - 1페이지만 조회)
 
                 // 요청 URL 생성 (primary_release_year 파라미터 추가)
                 String url = UriComponentsBuilder.fromHttpUrl(baseUrl + "/discover/movie")
@@ -85,6 +87,7 @@ public class TmdbService {
                         if (summary == null) continue;
 
                         if (movieRepository.findByTmdbId((long) summary.getId()).isPresent()) {
+                            log.info("Aleardy Data : " + summary.getTitle());
                             continue;
                         }
 

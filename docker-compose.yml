@@ -7,8 +7,8 @@ services:
     ports:
       - "8080:8080"
     env_file:
-      - ./src/main/resources/env.properties
-#      - .env
+#      - ./src/main/resources/env.properties
+      - .env
     environment:
       - MYSQL_META_URL=jdbc:mysql://meta-db:3306/meta_data?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
       - MYSQL_META_USERNAME=root
@@ -32,6 +32,7 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
 
+      - JAVA_TOOL_OPTIONS=-Xmx512m
       - TZ=Asia/Seoul
     depends_on:
       meta-db:
