@@ -1,6 +1,5 @@
 package Recommend.Movie.User.Domain;
 
-import Recommend.Movie.Diary.Domain.Diary;
 import Recommend.Movie.LikeMovie.Domain.LikedMovie;
 import jakarta.persistence.*;
 import lombok.*;
@@ -55,10 +54,6 @@ public class User {
 
     @OneToMany(mappedBy = "user", fetch =  FetchType.LAZY)
     @Builder.Default
-    private List<Diary> diaryList = new ArrayList<>();
-
-    @OneToMany(mappedBy = "user", fetch =  FetchType.LAZY)
-    @Builder.Default
     private List<LikedMovie> likedMovieList = new ArrayList<>();
 
 
@@ -66,9 +61,6 @@ public class User {
         this.likedMovieList.add(likedMovie);
     }
 
-    public void addDiary(Diary diary){
-        this.diaryList.add(diary);
-    }
     @PrePersist
     protected void onCreate() {
         if (this.createAt == null) {

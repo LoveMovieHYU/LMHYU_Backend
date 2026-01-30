@@ -8,6 +8,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class MovieReactionRequestDTO {
-    @Schema(description = "반응 타입 (LIKE: 좋아요, DISLIKE: 싫어요)", example = "LIKE")
+    @Schema(description = "반응 타입", example = "LIKE")
     private ReactionType reactionType;
 }
