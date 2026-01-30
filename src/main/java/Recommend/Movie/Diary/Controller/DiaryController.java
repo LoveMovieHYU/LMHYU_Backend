@@ -20,7 +20,7 @@ import java.util.List;
 
 @Tag(name = " 감정일기 API", description = "감정일기 작성 및 조회")
 @RestController
-@RequestMapping("/api/diary")
+@RequestMapping("/diary")
 public class DiaryController {
 
     private final DiaryService diaryService;

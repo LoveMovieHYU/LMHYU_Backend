@@ -1,0 +1,73 @@
+package Recommend.Movie.LikeMovie.Service;
+
+import Recommend.Movie.Config.Exception.BusinessException;
+import Recommend.Movie.Config.Exception.ErrorCode;
+import Recommend.Movie.LikeMovie.Converter.LikeMovieConverter;
+import Recommend.Movie.LikeMovie.Domain.LikedMovie;
+import Recommend.Movie.LikeMovie.Domain.LikeMovieListResponseDTO;
+import Recommend.Movie.LikeMovie.Repository.LikeMovieRepository;
+import Recommend.Movie.LikeMovie.Dto.MovieReactionRequestDTO;
+import Recommend.Movie.Tmdb.Domain.Movie;
+import Recommend.Movie.Tmdb.Repository.MovieRepository;
+import Recommend.Movie.User.Domain.User;
+import Recommend.Movie.User.Repository.UserRepository;
+import jakarta.transaction.Transactional;
+import org.springframework.stereotype.Service;
+
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class LikeMovieService {
+
+    private final LikeMovieRepository likeMovieRepository;
+    private final UserRepository userRepository;
+    private final MovieRepository movieRepository;
+
+    public LikeMovieService(LikeMovieRepository likeMovieRepository,
+                           UserRepository userRepository, MovieRepository movieRepository) {
+        this.likeMovieRepository = likeMovieRepository;
+        this.userRepository = userRepository;
+        this.movieRepository = movieRepository;
+    }
+
+    /**
+     * 추천된 영화 반응 저장
+     * */
+    @Transactional
+    public String saveMovieReaction(int movieId, MovieReactionRequestDTO requestDTO,
+                                    String userId){
+        User user = getUser(userId);
+        Movie movie = movieRepository.findById(movieId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MOVIE_NOT_FOUND, "해당 영화가 존재하지 않습니다."));
+
+
+        LikedMovie likedMovie = LikeMovieConverter.toEntity(requestDTO, user, movie);
+        user.addLikeMovie(likedMovie);
+        likeMovieRepository.save(likedMovie);
+        return "성공했습니다.";
+
+    }
+
+    /**
+     * 최근 좋아요 누른 영화 조회
+     * */
+    public List<LikeMovieListResponseDTO> getLikeMovieList(String userId){
+        User user = getUser(userId);
+
+        return user.getLikedMovieList().stream()
+                .sorted(Comparator.comparing(LikedMovie::getId).reversed())
+                .map(event -> LikeMovieConverter.toDTO(event.getMovie()))
+                .collect(Collectors.toList());
+    }
+
+    private User getUser(String userId) {
+        User user = userRepository.findByUserId(Integer.parseInt(userId));
+        if(user == null){
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND, "유저를 찾을 수 없습니다.");
+        }
+        return user;
+    }
+
+}

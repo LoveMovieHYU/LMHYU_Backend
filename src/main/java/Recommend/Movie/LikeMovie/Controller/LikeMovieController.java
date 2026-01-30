@@ -1,10 +1,10 @@
-package Recommend.Movie.Feedback.Controller;
+package Recommend.Movie.LikeMovie.Controller;
 
 import Recommend.Movie.Config.Exception.BusinessException;
 import Recommend.Movie.Config.Exception.ErrorCode;
-import Recommend.Movie.Feedback.Domain.LikeMovieListResponseDTO;
-import Recommend.Movie.Feedback.Service.FeedbackService;
-import Recommend.Movie.Feedback.Dto.MovieReactionRequestDTO;
+import Recommend.Movie.LikeMovie.Domain.LikeMovieListResponseDTO;
+import Recommend.Movie.LikeMovie.Service.LikeMovieService;
+import Recommend.Movie.LikeMovie.Dto.MovieReactionRequestDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -16,15 +16,15 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.util.List;
 
-@Tag(name = " 피드백 & 감정 API", description = "추천된 영화 좋아요/싫어요 반응 및 오늘의 감정 관리 API")
+@Tag(name = " 피드백", description = "추천된 영화 좋아요/싫어요 반응 및 오늘의 감정 관리 API")
 @RestController
-@RequestMapping("/api/feedback")
-public class FeedbackController {
+@RequestMapping("/api/like")
+public class LikeMovieController {
 
-    private final FeedbackService feedbackService;
+    private final LikeMovieService likeMovieService;
 
-    public FeedbackController(FeedbackService feedbackService) {
-        this.feedbackService = feedbackService;
+    public LikeMovieController(LikeMovieService likeMovieService) {
+        this.likeMovieService = likeMovieService;
     }
 
     /**
@@ -45,7 +45,7 @@ public class FeedbackController {
         if(principal == null){
             throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
         }
-        String answer = feedbackService.saveMovieReaction(movieId, requestDTO, principal.getName());
+        String answer = likeMovieService.saveMovieReaction(movieId, requestDTO, principal.getName());
 
         return ResponseEntity.ok(answer);
     }
@@ -65,7 +65,7 @@ public class FeedbackController {
         if(principal == null){
             throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
         }
-        List<LikeMovieListResponseDTO> responseDTO = feedbackService.getLikeMovieList(principal.getName());
+        List<LikeMovieListResponseDTO> responseDTO = likeMovieService.getLikeMovieList(principal.getName());
         return ResponseEntity.ok(responseDTO);
     }
 
