@@ -49,6 +49,9 @@ public class MovieService {
 
     }
 
+    /**
+     * 영화 상세보기
+     * */
     public MovieDetailResponse getMovieDetail(long tmdbId) {
         Movie movie = movieRepository.findByTmdbIdWithPeople(tmdbId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MOVIE_NOT_FOUND,"영화를 찾을 수 없습니다."));

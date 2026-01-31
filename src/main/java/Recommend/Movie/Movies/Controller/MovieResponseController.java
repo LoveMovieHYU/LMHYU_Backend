@@ -36,7 +36,7 @@ public class MovieResponseController {
 
     /**
      * 영화 상세 정보 조회
-     * GET /api/movies/{movieId}
+     * GET /api/movies?movieId=1268552
      */
     @Operation(summary = "영화 상세 정보 조회", description = "영화 ID(tmdbId)를 통해 영화의 제목, 줄거리, 출연진, 평점 등 상세 정보를 조회합니다.")
     @ApiResponses(value = {
@@ -47,8 +47,8 @@ public class MovieResponseController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류",
                     content = @Content)
     })
-    @GetMapping("/{movieId}")
-    public ResponseEntity<MovieDetailResponse> getMovieDetail(@PathVariable long movieId, Principal principal) {
+    @GetMapping("")
+    public ResponseEntity<MovieDetailResponse> getMovieDetail(@RequestParam long movieId, Principal principal) {
 //        if (principal != null) {
 //            int userId = Integer.parseInt(principal.getName());
 //
