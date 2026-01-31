@@ -1,6 +1,8 @@
 package Recommend.Movie.Movies.Controller;
 
-import Recommend.Movie.Movies.Dto.HomeResponseDTO;
+import Recommend.Movie.Biorhythm.Dto.BiorhythmScore;
+import Recommend.Movie.Biorhythm.Service.AiDatasetService;
+import Recommend.Movie.Biorhythm.Service.RecommendService;
 import Recommend.Movie.Movies.Dto.MovieSearchResponseDTO;
 import Recommend.Movie.Tmdb.Dto.MovieDetailResponse;
 import Recommend.Movie.Movies.Service.MovieService;
@@ -14,6 +16,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 
 @Tag(name = " 영화 리스트 조회 API", description = "영화 조회 관련 API")
@@ -22,16 +25,20 @@ import java.util.List;
 public class MovieResponseController {
 
     private final MovieService movieService;
+    private final RecommendService recommendService;
+    private final AiDatasetService datasetService;
 
-    public MovieResponseController(MovieService movieService) {
+    public MovieResponseController(MovieService movieService, RecommendService recommendService, AiDatasetService datasetService) {
         this.movieService = movieService;
+        this.recommendService = recommendService;
+        this.datasetService = datasetService;
     }
 
     /**
      * 영화 상세 정보 조회
      * GET /api/movies/{movieId}
      */
-    @Operation(summary = "영화 상세 정보 조회", description = "영화 ID(movieId)를 통해 영화의 제목, 줄거리, 출연진, 평점 등 상세 정보를 조회합니다.")
+    @Operation(summary = "영화 상세 정보 조회", description = "영화 ID(tmdbId)를 통해 영화의 제목, 줄거리, 출연진, 평점 등 상세 정보를 조회합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공",
                     content = @Content(schema = @Schema(implementation = MovieDetailResponse.class))),
@@ -41,7 +48,15 @@ public class MovieResponseController {
                     content = @Content)
     })
     @GetMapping("/{movieId}")
-    public ResponseEntity<MovieDetailResponse> getMovieDetail(@PathVariable int movieId) {
+    public ResponseEntity<MovieDetailResponse> getMovieDetail(@PathVariable long movieId, Principal principal) {
+//        if (principal != null) {
+//            int userId = Integer.parseInt(principal.getName());
+//
+//            // 바이오리듬 점수 획득 (Redis 조회라 매우 빠름)
+//            BiorhythmScore score = recommendService.getBioCache(userId);
+//            //AI 서버로 로그 전송 (비동기라 즉시 리턴됨)
+//            datasetService.sendInteractionLog(userId, movieId, score);
+//        }
         return ResponseEntity.ok(movieService.getMovieDetail(movieId));
     }
 
@@ -68,15 +83,6 @@ public class MovieResponseController {
 
         List<MovieSearchResponseDTO> result = movieService.searchMovies(keyword, page);
         return ResponseEntity.ok(result);
-    }
-
-    /**
-     * 홈 화면 데이터 조회 ( 임시 활용 )
-     * GET /api/movies/home
-     */
-    @GetMapping("/home")
-    public ResponseEntity<HomeResponseDTO> getHomeData() {
-        return ResponseEntity.ok(movieService.getHomeData());
     }
 
 }

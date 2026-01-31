@@ -97,7 +97,7 @@ public class RecommendService {
      */
     public List<MovieAiRecommendationDto> getbiorhythmBasedRecommendation(int userId) {
         
-        String cacheKey = getCacheKey(userId);
+        String cacheKey = getMovieListCacheKey(userId);
 
         try {
             List<MovieAiRecommendationDto> cachedData =
@@ -152,13 +152,16 @@ public class RecommendService {
         return responseDTO;
     }
 
+    /**
+     * TmdbID 를 활용하여 영화 DB 접근 후 DTO 변환
+     * */
     private List<MovieAiRecommendationDto> getMovieAiRecommendationDtos(AiResponseDTO[] aiResponseArray) {
         List<Long> tmdbIds = Arrays.stream(aiResponseArray)
                 .map(AiResponseDTO::getMovieId)
                 .collect(Collectors.toList());
 
         // DB 조회
-        List<Movie> movies = movieRepository.findAllByTmdbId(tmdbIds);
+        List<Movie> movies = movieRepository.findAllByTmdbIdIn(tmdbIds);
 
         Map<Long, Movie> movieMap = movies.stream()
                 .collect(Collectors.toMap(Movie::getTmdbId, Function.identity()));
@@ -172,7 +175,7 @@ public class RecommendService {
     }
 
     /**
-     * AI 서버 호출
+     * AI 영화 리스트 조회 API 호출
      * */
     private AiResponseDTO[] callAiApi(int userId, double p, double e, double i) {
         AiResponseDTO[] aiResponseArray;
@@ -197,16 +200,53 @@ public class RecommendService {
 
         String message = getStatusMessage(score);
 
+        saveBioRedis(getBioCacheKey(userId),score); // 바이오리듬 분석 수치 Redis 저장
+        
         return BiorhythmConverter.toAnalysisDTO(score, message);
     }
 
+    /**
+     * 바이오리듬 Redis 저장
+     * */
+    public void saveBioRedis(String key, BiorhythmScore score){
+        // Redis 저장
+        try {
+            redisTemplate.opsForValue().set(key, score, 1, TimeUnit.DAYS);
+        } catch (Exception ex) {
+            log.error("Redis save failed", ex);
+        }
+    }
 
     /**
-     * Redis Key 생성
+     * 바이오리듬 Reids 조회
      * */
-    private String getCacheKey(int userId) {
+    public BiorhythmScore getBioCache(int userId) {
+        String key = getBioCacheKey(userId);
+
+        BiorhythmScore biorhythmScore = (BiorhythmScore) redisTemplate.opsForValue().get(key);
+
+        if (biorhythmScore == null) {
+            log.info("Cache Hit! Returning data from Redis for user: {}", userId);
+        }
+        return biorhythmScore;
+
+    }
+
+    /**
+     * Redis Key 생성 (영화 리스트)
+     * */
+    private String getMovieListCacheKey(int userId) {
         return "recommend:biorhythm:" + userId + ":" + LocalDate.now();
     }
+    
+    /**
+     * Redis Key 생성 (바이오리듬 리스트)
+     * */
+    private String getBioCacheKey(int userId) {
+        return "biorhythm:" + userId + ":" + LocalDate.now();
+    }
+
+
 
 
     /**
@@ -220,7 +260,8 @@ public class RecommendService {
         double e = (Math.sin((2 * Math.PI * daysLived) / 28) * 100);
         double i = (Math.sin((2 * Math.PI * daysLived) / 33) * 100);
 
-        return new BiorhythmScore(p, e, i);
+        BiorhythmScore biorhythmScore = new BiorhythmScore(p, e, i);
+        return biorhythmScore;
     }
 
     /**

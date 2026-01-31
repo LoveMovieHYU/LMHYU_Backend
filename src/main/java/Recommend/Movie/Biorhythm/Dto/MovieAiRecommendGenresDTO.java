@@ -10,4 +10,8 @@ import lombok.Setter;
 @NoArgsConstructor
 public class MovieAiRecommendGenresDTO {
     private String genre;
+
+    public MovieAiRecommendGenresDTO(String genre) {
+        this.genre=genre;
+    }
 }

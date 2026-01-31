@@ -15,9 +15,8 @@ public class RecommendConverter {
         Set<MovieAiRecommendGenresDTO> genreDtos = (movie.getGenres() == null) ?
                 Collections.emptySet() :
                 movie.getGenres().stream()
-                        .map(movieGenre -> MovieAiRecommendGenresDTO.builder()
-                                .genre(movieGenre.getGenre().getName())
-                                .build())
+                        .map(movieGenre ->
+                                new MovieAiRecommendGenresDTO(movieGenre.getGenre().getName()))
                         .collect(Collectors.toSet());
 
         return MovieAiRecommendationDto.builder()
