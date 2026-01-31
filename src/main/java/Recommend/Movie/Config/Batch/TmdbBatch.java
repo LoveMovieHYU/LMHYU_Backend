@@ -13,7 +13,6 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.support.IteratorItemReader;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -22,7 +21,7 @@ import org.springframework.retry.backoff.FixedBackOffPolicy;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
-import java.util.List;
+
 
 @Configuration
 @Slf4j
@@ -46,12 +45,12 @@ public class TmdbBatch {
                          ItemProcessor<WorkItem, Integer> tmdbProcessor,
                          ItemWriter<Integer> tmdbWriter){
         return new StepBuilder("tmdbStep", jobRepository)
-                .<WorkItem, Integer>chunk(200, transactionManager)
+                .<WorkItem, Integer>chunk(100, transactionManager)
                 .reader(tmdbReader)
                 .processor(tmdbProcessor)
                 .writer(tmdbWriter)
                 .faultTolerant()
-                .retry(org.springframework.web.client.ResourceAccessException.class) // Read timed out 포함
+                .retry(org.springframework.web.client.ResourceAccessException.class)
                 .retry(java.net.SocketTimeoutException.class)
                 .retryLimit(3)
                 .backOffPolicy(new FixedBackOffPolicy() {{ setBackOffPeriod(1000L); }})
@@ -60,19 +59,16 @@ public class TmdbBatch {
 
     @Bean
     @StepScope
-    public IteratorItemReader<WorkItem> tmdbReader(
-            @Value("#{jobParameters['startPage']}") Long startPage,
-            @Value("#{jobParameters['endPage']}") Long endPage,
+    public ItemReader<WorkItem> tmdbReader(
+            @Value("#{jobParameters['startPage']}") Long startPage, // (이제 안 쓰지만 파라미터 에러 방지용으로 둠)
             @Value("#{jobParameters['includeAdult']}") String includeAdult
     ){
-        int sPage = (startPage != null) ? startPage.intValue() : 1;
-        int ePage = (endPage != null) ? endPage.intValue() : sPage;
+        int startYear = 1996;
+
         boolean incAdult = Boolean.parseBoolean(includeAdult);
 
-        List<WorkItem> items = tmdbService.buildWorkItemsFromDiscover(sPage, ePage, incAdult);
-        return new IteratorItemReader<>(items);
+        return new TmdbDiscoverItemReader(tmdbService, startYear, incAdult);
     }
-
     @Bean
     @StepScope
     public ItemProcessor<WorkItem, Integer> tmdbProcessor(){
@@ -83,7 +79,11 @@ public class TmdbBatch {
     public ItemWriter<Integer> tmdbWriter(){
         return items -> {
             for (Integer movieId : items) {
-                tmdbService.fetchAndSaveMovieDetail(movieId);
+                try{
+                    tmdbService.fetchAndSaveMovieDetail(movieId);
+                } catch(Exception e){
+                    log.error("Failed to save movie id: {}", movieId, e);
+                }
             }
         };
     }
