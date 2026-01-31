@@ -68,7 +68,7 @@ public class UserController {
     }
 
     /**
-     * 닉네임 변경
+     * 유저 정보 변경
      * PUT /api/user/update
      * */
 

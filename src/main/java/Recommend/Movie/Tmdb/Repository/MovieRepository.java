@@ -15,6 +15,8 @@ import java.util.Optional;
 public interface MovieRepository extends JpaRepository<Movie, Integer>, JpaSpecificationExecutor<Movie> {
     Optional<Movie> findByTmdbId(Long tmdbId);
 
+    List<Movie> findAllByTmdbId(List<Long> tmdbId);
+
     // 기본 findById는 연관된 데이터를 안 가져옴 -> JOIN FETCH 사용
     @Query("SELECT m FROM Movie m " +
             "LEFT JOIN FETCH m.peoples mp " +
