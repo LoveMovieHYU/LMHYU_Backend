@@ -63,10 +63,35 @@ public class RecommendService {
         return responseDTO;
 
     }
+    /**
+     * 바이오리듬 커스텀 기반 영화 추천
+     * */
+    public List<MovieAiRecommendationDto> getCustomRecommend(Double p, Double e, Double i, int userId){
+        AiResponseDTO[] aiResponseArray = null;
 
+        try {
+            aiResponseArray = callAiApi(userId, p, e, i);
+        } catch (WebClientResponseException ex) {
+            log.error("AI Server Error: Status={}, Body={}", ex.getStatusCode(), ex.getResponseBodyAsString());
+            // 필요시 예외 처리 (빈 리스트 반환 or 커스텀 예외 던지기)
+            return List.of();
+        } catch (Exception ex) {
+            log.error("AI Server Connection Failed", ex);
+            return List.of();
+        }
+
+        if (aiResponseArray == null || aiResponseArray.length == 0) {
+            log.info("AI Server returned empty list.");
+            return List.of();
+        }
+
+        List<MovieAiRecommendationDto> responseDTO = getMovieAiRecommendationDtos(aiResponseArray);
+
+        return responseDTO;
+    }
 
     /**
-     * 감정 기반 추천 (AI 연동 -> DB 조회 -> Redis 저장)
+     * 바이오리듬 기반 추천 (AI 연동 -> DB 조회 -> Redis 저장)
      * 1. Redis 캐시 확인 -> 있으면 반환
      * 2. 없으면 AI 요청 -> DB 조회 -> Redis 저장 -> 반환
      */
@@ -89,22 +114,16 @@ public class RecommendService {
         User user = getUser(userId);
         BiorhythmScore biorhythmScore = calculateScores(user.getBirthday());
 
-        int p = biorhythmScore.getPhysical();
-        int e = biorhythmScore.getEmotional();
-        int i = biorhythmScore.getIntellectual();
+        double p = biorhythmScore.getPhysical();
+        double e = biorhythmScore.getEmotional();
+        double i = biorhythmScore.getIntellectual();
 
         // AI 서버 호출
         log.info("Requesting AI Recommendation for user: {}, p={}, e={}, i={}", userId, p, e, i);
         AiResponseDTO[] aiResponseArray = null;
 
         try {
-            aiResponseArray = webClient.get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path("/api/recommend/movie/{userId}/{p}/{e}/{i}")
-                            .build(userId, p, e, i))
-                    .retrieve()
-                    .bodyToMono(AiResponseDTO[].class)
-                    .block();
+            aiResponseArray = callAiApi(userId, p, e, i);
         } catch (WebClientResponseException ex) {
             log.error("AI Server Error: Status={}, Body={}", ex.getStatusCode(), ex.getResponseBodyAsString());
             // 필요시 예외 처리 (빈 리스트 반환 or 커스텀 예외 던지기)
@@ -120,6 +139,20 @@ public class RecommendService {
         }
 
         // Movie ID 추출
+        List<MovieAiRecommendationDto> responseDTO = getMovieAiRecommendationDtos(aiResponseArray);
+
+        // Redis 저장
+        try {
+            redisTemplate.opsForValue().set(cacheKey, responseDTO, 1, TimeUnit.DAYS);
+            log.info("Saved recommendations to Redis. Size: {}", responseDTO.size());
+        } catch (Exception ex) {
+            log.error("Redis save failed", ex);
+        }
+
+        return responseDTO;
+    }
+
+    private List<MovieAiRecommendationDto> getMovieAiRecommendationDtos(AiResponseDTO[] aiResponseArray) {
         List<Long> tmdbIds = Arrays.stream(aiResponseArray)
                 .map(AiResponseDTO::getMovieId)
                 .collect(Collectors.toList());
@@ -135,16 +168,22 @@ public class RecommendService {
                 .filter(Objects::nonNull)
                 .map(RecommendConverter::fromEntity)
                 .collect(Collectors.toList());
-
-        // Redis 저장
-        try {
-            redisTemplate.opsForValue().set(cacheKey, responseDTO, 1, TimeUnit.DAYS);
-            log.info("Saved recommendations to Redis. Size: {}", responseDTO.size());
-        } catch (Exception ex) {
-            log.error("Redis save failed", ex);
-        }
-
         return responseDTO;
+    }
+
+    /**
+     * AI 서버 호출
+     * */
+    private AiResponseDTO[] callAiApi(int userId, double p, double e, double i) {
+        AiResponseDTO[] aiResponseArray;
+        aiResponseArray = webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/recommend/movie/{userId}/{p}/{e}/{i}")
+                        .build(userId, p, e, i))
+                .retrieve()
+                .bodyToMono(AiResponseDTO[].class)
+                .block();
+        return aiResponseArray;
     }
 
     /**
@@ -177,9 +216,9 @@ public class RecommendService {
         long daysLived = ChronoUnit.DAYS.between(birthDay, LocalDate.now());
 
         // 공식: sin(2 * pi * t / 주기) * 100
-        int p = (int) (Math.sin((2 * Math.PI * daysLived) / 23) * 100);
-        int e = (int) (Math.sin((2 * Math.PI * daysLived) / 28) * 100);
-        int i = (int) (Math.sin((2 * Math.PI * daysLived) / 33) * 100);
+        double p = (Math.sin((2 * Math.PI * daysLived) / 23) * 100);
+        double e = (Math.sin((2 * Math.PI * daysLived) / 28) * 100);
+        double i = (Math.sin((2 * Math.PI * daysLived) / 33) * 100);
 
         return new BiorhythmScore(p, e, i);
     }

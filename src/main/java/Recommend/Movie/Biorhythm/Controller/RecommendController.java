@@ -44,6 +44,12 @@ public class RecommendController {
         return ResponseEntity.ok(result);
     }
 
+
+    /**
+     * 신규 회원 AI 추천 요청
+     * POST /api/recommend/first/list
+     * */
+
     @Operation(summary = "신규 회원 정보 등록 및 AI 추천", description = "최초 사용자에게 닉네임/생년월일을 입력받아 저장하고," +
             " AI 추천 결과를 반환합니다.")
     @ApiResponses(value = {
@@ -51,7 +57,7 @@ public class RecommendController {
             @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터", content = @Content)
     })
     @PostMapping("/first/list")
-    public ResponseEntity<List<MovieAiRecommendationDto>> firstGetEmotionRecommendation(@Valid @RequestBody UpdateUserRequestDTO requestDTO,
+    public ResponseEntity<List<MovieAiRecommendationDto>> firstGetBiorhythmRecommendation(@Valid @RequestBody UpdateUserRequestDTO requestDTO,
                                                                                         Principal principal) {
         List<MovieAiRecommendationDto> responseDTO =
                 recommendService.savedDetailUserInfoAndRecommend(Integer.parseInt(principal.getName()), requestDTO);
@@ -59,16 +65,33 @@ public class RecommendController {
         return ResponseEntity.ok(responseDTO);
     }
 
-
+    /**
+     * 기존 회원 AI 추천 요청
+     * GET /api/recommend/list
+     * */
     @Operation(summary = "기존 회원 AI 추천 요청", description = "기존 사용자의 정보를 바탕으로 AI 영화 추천을 수행합니다." +
             " (Redis 캐시가 있다면 캐시된 값을 반환합니다.)")
     @GetMapping("/list")
-    public ResponseEntity<List<MovieAiRecommendationDto>> getEmotionRecommendation(Principal principal) {
+    public ResponseEntity<List<MovieAiRecommendationDto>> getBiorhythmBasedRecommendation(Principal principal) {
         List<MovieAiRecommendationDto> responseDTO =
                 recommendService.getbiorhythmBasedRecommendation(Integer.parseInt(principal.getName()));
 
         return ResponseEntity.ok(responseDTO);
     }
 
+    /**
+     * 바이오리듬 커스텀 기반 영화 추천
+     * GET /api/recommend/custom/list&p=0.5&e=0.1&i=0.2
+     * */
+    @GetMapping("/custom/list")
+    public ResponseEntity<List<MovieAiRecommendationDto>> getCustomBiorhythmRecommend(
+            @RequestParam("p") Double p,
+            @RequestParam("e") Double e,
+            @RequestParam("i") Double i,
+            Principal principal){
+        List<MovieAiRecommendationDto> responseDTO =
+                recommendService.getCustomRecommend(p, e, i, Integer.parseInt(principal.getName()));
+        return ResponseEntity.ok(responseDTO);
+    }
 
 }
