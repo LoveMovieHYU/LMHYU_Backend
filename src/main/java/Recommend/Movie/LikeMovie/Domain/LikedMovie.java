@@ -1,5 +1,6 @@
-package Recommend.Movie.Diary.Domain;
+package Recommend.Movie.LikeMovie.Domain;
 
+import Recommend.Movie.Movies.Domain.ReactionType;
 import Recommend.Movie.Tmdb.Domain.Movie;
 import Recommend.Movie.User.Domain.User;
 import jakarta.persistence.*;
@@ -8,36 +9,18 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
-@Entity
+@Entity(name = "liked_movie")
 @Builder
-@Getter
 @NoArgsConstructor
+@Getter
 @AllArgsConstructor
-public class Diary {
-
+public class LikedMovie {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "diary_id")
-    private int diaryId;
-
-    private String content;
-
-    private String title;
-
-    @Column(name = "create_at")
-    private LocalDate createAt;
-
-    @Column(name = "emotion_tag")
-    @Enumerated(EnumType.STRING)
-    private EmotionTag emotionTag;
-
-    @Column(name = "movie_title")
-    private String movieTitle;
-
-    @Column(name = "rating")
-    private Float rating;
+    @Column(name = "like_id")
+    private int id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
@@ -46,5 +29,12 @@ public class Diary {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "movie_id")
     private Movie movie;
+
+    @Column(name = "reaction_type")
+    @Enumerated(EnumType.STRING)
+    private ReactionType reactionType;
+
+    @Column(name = "create_at")
+    private LocalDateTime createAt;
 
 }

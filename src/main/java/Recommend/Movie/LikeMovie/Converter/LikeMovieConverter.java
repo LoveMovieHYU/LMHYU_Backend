@@ -1,19 +1,18 @@
-package Recommend.Movie.Feedback.Converter;
+package Recommend.Movie.LikeMovie.Converter;
 
-import Recommend.Movie.Feedback.Domain.FeedbackEvent;
-import Recommend.Movie.Feedback.Domain.LikeMovieListResponseDTO;
-import Recommend.Movie.Feedback.Dto.MovieReactionRequestDTO;
+import Recommend.Movie.LikeMovie.Domain.LikedMovie;
+import Recommend.Movie.LikeMovie.Domain.LikeMovieListResponseDTO;
+import Recommend.Movie.LikeMovie.Dto.MovieReactionRequestDTO;
 import Recommend.Movie.Tmdb.Domain.Movie;
 import Recommend.Movie.User.Domain.User;
 
 import java.time.LocalDateTime;
 
-public class FeedBackConverter {
+public class LikeMovieConverter {
 
-    public static FeedbackEvent toEntity(MovieReactionRequestDTO requestDTO, User user, Movie movie){
-        return FeedbackEvent.builder()
+    public static LikedMovie toEntity(MovieReactionRequestDTO requestDTO, User user, Movie movie){
+        return LikedMovie.builder()
                 .createAt(LocalDateTime.now())
-                .emotionTag(requestDTO.getEmotionTag())
                 .reactionType(requestDTO.getReactionType())
                 .movie(movie)
                 .user(user)
@@ -22,6 +21,7 @@ public class FeedBackConverter {
 
     public static LikeMovieListResponseDTO toDTO(Movie movie){
         return LikeMovieListResponseDTO.builder()
+                .posterPath(movie.getPosterPath())
                 .movieId(movie.getId())
                 .movieTitle(movie.getTitle())
                 .build();
