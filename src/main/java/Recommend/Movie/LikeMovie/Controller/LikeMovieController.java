@@ -31,7 +31,7 @@ public class LikeMovieController {
      *  추천 영화 반응 저장
      *  POST /api/likes/{movieId}
      * */
-    @Operation(summary = "영화 반응(좋아요/싫어요) 저장", description = "추천된 영화에 대해 좋아요를 저장합니다.")
+    @Operation(summary = "영화 좋아요 저장", description = "추천된 영화에 대해 좋아요를 저장합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "성공 (반환값: '성공했습니다.')"),
             @ApiResponse(responseCode = "401", description = "로그인 필요"),
