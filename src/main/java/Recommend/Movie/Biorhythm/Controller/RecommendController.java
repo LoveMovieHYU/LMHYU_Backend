@@ -35,7 +35,8 @@ public class RecommendController {
      * 바이오리듬 분석 API
      * 생년월일 기반으로 현재 상태 그래프/멘트용 데이터 반환
      */
-    @Operation(summary = "바이오리듬 지수 분석", description = "그래프와 멘트 출력을 위한 바이오리듬 지수를 분석하여 반환합니다.")
+    @Operation(summary = "바이오리듬 지수 분석", description = "그래프와 멘트 출력을 위한 바이오리듬 지수를 분석하여 반환합니다." +
+            "ㅗ")
     @GetMapping("/biorhythm/check")
     public ResponseEntity<BiorhythmAnalysisDTO> analyzeBiorhythm(Principal principal) {
         if (principal == null) throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
@@ -51,7 +52,8 @@ public class RecommendController {
      * */
 
     @Operation(summary = "신규 회원 정보 등록 및 AI 추천", description = "최초 사용자에게 닉네임/생년월일을 입력받아 저장하고," +
-            " AI 추천 결과를 반환합니다.")
+            " AI 추천 결과를 반환합니다." +
+            "해당 API 조회하면 추천 받은 영화 리스트와, 사용자의 바이오리듬 Redis 에 저장합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "추천 성공", content = @Content(schema = @Schema(implementation = MovieAiRecommendationDto.class))),
             @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터", content = @Content)
@@ -83,6 +85,8 @@ public class RecommendController {
      * 바이오리듬 커스텀 기반 영화 추천
      * GET /api/recommend/custom/list&p=0.5&e=0.1&i=0.2
      * */
+        @Operation(summary = "바이오리듬 수치 커스텀 기반 영화 추천", description = "사용자가 바이오리듬 수치를 커스텀하여 영화 추천 받음." +
+            " Redis 에 따로 저장하지 않습니다. ")
     @GetMapping("/custom/list")
     public ResponseEntity<List<MovieAiRecommendationDto>> getCustomBiorhythmRecommend(
             @RequestParam("p") Double p,

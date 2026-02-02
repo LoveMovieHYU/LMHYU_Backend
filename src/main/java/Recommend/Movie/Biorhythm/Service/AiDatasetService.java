@@ -26,7 +26,6 @@ public class AiDatasetService {
         double e = score.getEmotional();
         double i = score.getIntellectual();
 
-        log.debug("Sending AI Log - User:{}, Movie:{}, P:{}, E:{}, I:{}", userId, movieId, p, e, i);
 
         try {
             webClient.get()

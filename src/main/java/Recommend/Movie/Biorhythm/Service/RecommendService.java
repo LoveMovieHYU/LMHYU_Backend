@@ -53,6 +53,7 @@ public class RecommendService {
 
     /**
      * 첫 로그인 유저인 경우 이메일, 생년월일 저장 후, 영화 추천 받음.
+     * 바이오리듬 수치 Redis 에 저장까지함.
      * */
     @Transactional
     public List<MovieAiRecommendationDto> savedDetailUserInfoAndRecommend(int userId, UpdateUserRequestDTO requestDTO){
@@ -93,7 +94,7 @@ public class RecommendService {
     /**
      * 바이오리듬 기반 추천 (AI 연동 -> DB 조회 -> Redis 저장)
      * 1. Redis 캐시 확인 -> 있으면 반환
-     * 2. 없으면 AI 요청 -> DB 조회 -> Redis 저장 -> 반환
+     * 2. 없으면 AI 요청 -> DB 조회 -> Redis 저장 (영화와 감정)-> 반환
      */
     public List<MovieAiRecommendationDto> getbiorhythmBasedRecommendation(int userId) {
         
@@ -113,6 +114,10 @@ public class RecommendService {
 
         User user = getUser(userId);
         BiorhythmScore biorhythmScore = calculateScores(user.getBirthday());
+
+        saveBioRedis(getBioCacheKey(userId),biorhythmScore); // 바이오리듬 분석 수치 Redis 저장
+        log.info("Saved Bio info in Chach ");
+
 
         double p = biorhythmScore.getPhysical();
         double e = biorhythmScore.getEmotional();
@@ -212,6 +217,7 @@ public class RecommendService {
         // Redis 저장
         try {
             redisTemplate.opsForValue().set(key, score, 1, TimeUnit.DAYS);
+            log.info("Saved Bio info in Chach ");
         } catch (Exception ex) {
             log.error("Redis save failed", ex);
         }
@@ -230,6 +236,24 @@ public class RecommendService {
         }
         return biorhythmScore;
 
+    }
+    
+    /**
+     * 조회 및 없으면 계산 후 저장 ( 로그 보낼 때 사용 )
+     * */
+    public BiorhythmScore getOrCalculateBiorhythm(int userId) {
+        BiorhythmScore cachedScore = getBioCache(userId);
+        if (cachedScore != null) {
+            return cachedScore;
+        }
+
+        User user = getUser(userId);
+        BiorhythmScore calculatedScore = calculateScores(user.getBirthday());
+
+        saveBioRedis(getBioCacheKey(userId), calculatedScore);
+        log.info("Bio Saved in Cache");
+
+        return calculatedScore;
     }
 
     /**

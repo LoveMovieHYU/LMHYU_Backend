@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,6 +22,7 @@ import java.util.List;
 
 @Tag(name = " 영화 리스트 조회 API", description = "영화 조회 관련 API")
 @RestController
+@Slf4j
 @RequestMapping("/api/movies") // 베이스 경로 통합
 public class MovieResponseController {
 
@@ -49,14 +51,18 @@ public class MovieResponseController {
     })
     @GetMapping("")
     public ResponseEntity<MovieDetailResponse> getMovieDetail(@RequestParam long movieId, Principal principal) {
-//        if (principal != null) {
-//            int userId = Integer.parseInt(principal.getName());
-//
-//            // 바이오리듬 점수 획득 (Redis 조회라 매우 빠름)
-//            BiorhythmScore score = recommendService.getBioCache(userId);
-//            //AI 서버로 로그 전송 (비동기라 즉시 리턴됨)
-//            datasetService.sendInteractionLog(userId, movieId, score);
-//        }
+
+        try{
+            int userId = Integer.parseInt(principal.getName());
+
+            BiorhythmScore score = recommendService.getOrCalculateBiorhythm(userId);            //AI 서버로 로그 전송 (비동기라 즉시 리턴됨)
+            log.info("Sending AI Log - User:{}", userId);
+            datasetService.sendInteractionLog(userId, movieId, score);
+
+        }catch (Exception e) {
+            log.error("AI 학습 데이터 전송 중 오류 발생 (User: {})", principal.getName(), e);
+        }
+
         return ResponseEntity.ok(movieService.getMovieDetail(movieId));
     }
 
