@@ -63,7 +63,7 @@ public class TmdbBatch {
             @Value("#{jobParameters['startPage']}") Long startPage, // (이제 안 쓰지만 파라미터 에러 방지용으로 둠)
             @Value("#{jobParameters['includeAdult']}") String includeAdult
     ){
-        int startYear = 2003;
+        int startYear = 2010;
 
         boolean incAdult = Boolean.parseBoolean(includeAdult);
 
