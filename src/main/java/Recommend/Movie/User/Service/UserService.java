@@ -45,7 +45,7 @@ public class UserService extends DefaultOAuth2UserService {
     public UserFindResponseDTO readUser(int userId) {
         try{
             User user = userRepository.findByUserId(userId);
-            UserFindResponseDTO responseDTO = new UserFindResponseDTO(user.getName(), user.getEmail());
+            UserFindResponseDTO responseDTO = new UserFindResponseDTO(user.getName(), user.getEmail(),user.getNickname());
             return responseDTO;
         } catch (BusinessException ex){
             throw new BusinessException(ErrorCode.USER_NOT_FOUND, "유저가 없습니다.");

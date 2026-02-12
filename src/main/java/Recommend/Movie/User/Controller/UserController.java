@@ -33,7 +33,7 @@ public class UserController {
      * 유저 정보 조회
      * GET /api/user
      * */
-    @Operation(summary = "내 정보 조회", description = "현재 로그인한 사용자의 상세 정보(이름, 이메일 등)를 조회합니다.")
+    @Operation(summary = "내 정보 조회", description = "현재 로그인한 사용자의 상세 정보(이름, 이메일, 닉네임 등)를 조회합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공", content = @Content(schema = @Schema(implementation = UserFindResponseDTO.class))),
             @ApiResponse(responseCode = "401", description = "로그인 필요 (토큰 만료 or 없음)"),
