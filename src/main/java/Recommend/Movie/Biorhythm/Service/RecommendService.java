@@ -193,31 +193,6 @@ public class RecommendService {
                 .block();
         return aiResponseArray;
 
-//        // 1. 일단 String으로 받아서 로그 찍어보기
-//        String rawResponse = webClient.get()
-//                .uri(uriBuilder -> uriBuilder
-//                        .path("/api/recommend/movie/{userId}/{p}/{e}/{i}")
-//                        .build(userId, p, e, i))
-//                .retrieve()
-//                .bodyToMono(String.class)
-//                .block();
-//
-//        log.info("AI Server Raw Response: {}", rawResponse);
-//
-//        try {
-//            ObjectMapper mapper = new ObjectMapper();
-//            // JSON이 배열 '[' 로 시작하는지 확인
-//            if (rawResponse != null && rawResponse.trim().startsWith("[")) {
-//                return mapper.readValue(rawResponse, AiResponseDTO[].class);
-//            } else {
-//                log.error("AI Server returned non-array response: {}", rawResponse);
-//                return new AiResponseDTO[0];
-//            }
-//        } catch (JsonProcessingException ex) {
-//            log.error("JSON Parsing Error", ex);
-//            return new AiResponseDTO[0];
-//        }
-
     }
 
     /**
