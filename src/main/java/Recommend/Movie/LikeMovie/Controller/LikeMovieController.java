@@ -71,6 +71,11 @@ public class LikeMovieController {
     /**
      * 좋아요한 영화 취소
      * */
+    @Operation(summary = "좋아요한 영화 삭제", description = "좋아요 삭제 ")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "삭제 성공"),
+            @ApiResponse(responseCode = "401", description = "로그인 필요")
+    })
     @DeleteMapping("/{tmdbId}")
     public ResponseEntity<String> deleteLikeMovie(@Parameter(description = "영화 식별자(tmdbId)", example = "123") @PathVariable int tmdbId,
                                                   Principal principal){
