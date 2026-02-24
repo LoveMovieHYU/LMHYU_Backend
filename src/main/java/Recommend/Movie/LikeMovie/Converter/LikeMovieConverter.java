@@ -22,7 +22,7 @@ public class LikeMovieConverter {
     public static LikeMovieListResponseDTO toDTO(Movie movie){
         return LikeMovieListResponseDTO.builder()
                 .posterPath(movie.getPosterPath())
-                .movieId(movie.getId())
+                .tmdbId(movie.getTmdbId())
                 .movieTitle(movie.getTitle())
                 .build();
     }

@@ -24,7 +24,8 @@ public enum ErrorCode {
     SAME_NICKNAME("SAME_NICKNAME", HttpStatus.CONFLICT),
     USER_NOT_FOUND("USER_NOT_FOUND", HttpStatus.NOT_FOUND),
     MOVIE_NOT_FOUND("MOVIE_NOT_FOUND", HttpStatus.NOT_FOUND),
-    DIARY_NOT_FOUND("DIARY_NOT_FOUND", HttpStatus.NOT_FOUND),;
+    DIARY_NOT_FOUND("DIARY_NOT_FOUND", HttpStatus.NOT_FOUND),
+    LIKE_MOVIE_NOT_FOUND("LIKE_MOVIE_NOT_FOUND", HttpStatus.NOT_FOUND);
 
     public final String code;
     public final HttpStatus httpStatus;

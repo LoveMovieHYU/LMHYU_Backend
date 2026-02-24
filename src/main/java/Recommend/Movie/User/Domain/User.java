@@ -60,6 +60,9 @@ public class User {
     public void addLikeMovie(LikedMovie likedMovie) {
         this.likedMovieList.add(likedMovie);
     }
+    public void removeLikeMovie(LikedMovie likedMovie) {
+        this.likedMovieList.remove(likedMovie);
+    }
 
     @PrePersist
     protected void onCreate() {

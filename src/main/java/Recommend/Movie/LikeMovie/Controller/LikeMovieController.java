@@ -29,7 +29,7 @@ public class LikeMovieController {
 
     /**
      *  추천 영화 반응 저장
-     *  POST /api/likes/{movieId}
+     *  POST /api/likes/{tmdbId}
      * */
     @Operation(summary = "영화 좋아요 저장", description = "추천된 영화에 대해 좋아요를 저장합니다.")
     @ApiResponses(value = {
@@ -37,15 +37,15 @@ public class LikeMovieController {
             @ApiResponse(responseCode = "401", description = "로그인 필요"),
             @ApiResponse(responseCode = "404", description = "존재하지 않는 영화 ID")
     })
-    @PostMapping("/{movieId}")
-    public ResponseEntity<String> reactionSave(@Parameter(description = "영화 식별자(ID)", example = "123") @PathVariable int movieId,
+    @PostMapping("/{tmdbId}")
+    public ResponseEntity<String> reactionSave(@Parameter(description = "영화 식별자(tmdbId)", example = "123") @PathVariable int tmdbId,
                                                @RequestBody MovieReactionRequestDTO requestDTO,
                                                Principal principal
                                                ){
         if(principal == null){
             throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
         }
-        String answer = likeMovieService.saveMovieReaction(movieId, requestDTO, principal.getName());
+        String answer = likeMovieService.saveMovieReaction(tmdbId, requestDTO, principal.getName());
 
         return ResponseEntity.ok(answer);
     }
@@ -66,6 +66,19 @@ public class LikeMovieController {
         }
         List<LikeMovieListResponseDTO> responseDTO = likeMovieService.getLikeMovieList(principal.getName());
         return ResponseEntity.ok(responseDTO);
+    }
+    
+    /**
+     * 좋아요한 영화 취소
+     * */
+    @DeleteMapping("/{tmdbId}")
+    public ResponseEntity<String> deleteLikeMovie(@Parameter(description = "영화 식별자(tmdbId)", example = "123") @PathVariable int tmdbId,
+                                                  Principal principal){
+        if(principal == null){
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        String answer = likeMovieService.deleteLikeMovie(tmdbId, principal.getName());
+        return ResponseEntity.ok(answer);
     }
 
 }

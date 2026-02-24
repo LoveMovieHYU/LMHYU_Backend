@@ -38,7 +38,7 @@ public class MovieResponseController {
 
     /**
      * 영화 상세 정보 조회
-     * GET /api/movies?movieId=1268552
+     * GET /api/movies?tmdbId=1268552
      */
     @Operation(summary = "영화 상세 정보 조회", description = "영화 ID(tmdbId)를 통해 영화의 제목, 줄거리, 출연진, 평점 등 상세 정보를 조회합니다.")
     @ApiResponses(value = {
@@ -50,20 +50,20 @@ public class MovieResponseController {
                     content = @Content)
     })
     @GetMapping("")
-    public ResponseEntity<MovieDetailResponse> getMovieDetail(@RequestParam long movieId, Principal principal) {
+    public ResponseEntity<MovieDetailResponse> getMovieDetail(@RequestParam long tmdbId, Principal principal) {
 
         try{
             int userId = Integer.parseInt(principal.getName());
 
             BiorhythmScore score = recommendService.getOrCalculateBiorhythm(userId);            //AI 서버로 로그 전송 (비동기라 즉시 리턴됨)
             log.info("Sending AI Log - User:{}", userId);
-            datasetService.sendInteractionLog(userId, movieId, score);
+            datasetService.sendInteractionLog(userId, tmdbId, score);
 
         }catch (Exception e) {
             log.error("AI 학습 데이터 전송 중 오류 발생 (User: {})", principal.getName(), e);
         }
 
-        return ResponseEntity.ok(movieService.getMovieDetail(movieId));
+        return ResponseEntity.ok(movieService.getMovieDetail(tmdbId));
     }
 
     /**

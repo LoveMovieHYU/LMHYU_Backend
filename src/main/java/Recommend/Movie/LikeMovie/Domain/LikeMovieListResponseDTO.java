@@ -7,8 +7,8 @@ import lombok.Getter;
 @Getter
 @Builder
 public class LikeMovieListResponseDTO {
-    @Schema(description = "영화 ID", example = "45")
-    private int movieId;
+    @Schema(description = "영화(tmdbId) ID", example = "45")
+    private long tmdbId;
     @Schema(description = "영화 제목", example = "어벤져스")
     private String movieTitle;
     @Schema(description = "영화 포스터 경로")

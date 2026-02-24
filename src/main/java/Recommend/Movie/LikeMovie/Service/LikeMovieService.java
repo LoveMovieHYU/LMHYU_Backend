@@ -36,10 +36,10 @@ public class LikeMovieService {
      * 추천된 영화 반응 저장
      * */
     @Transactional
-    public String saveMovieReaction(int movieId, MovieReactionRequestDTO requestDTO,
+    public String saveMovieReaction(int tmdbId, MovieReactionRequestDTO requestDTO,
                                     String userId){
         User user = getUser(userId);
-        Movie movie = movieRepository.findById(movieId)
+        Movie movie = movieRepository.findByTmdbId((long) tmdbId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MOVIE_NOT_FOUND, "해당 영화가 존재하지 않습니다."));
 
 
@@ -60,6 +60,24 @@ public class LikeMovieService {
                 .sorted(Comparator.comparing(LikedMovie::getId).reversed())
                 .map(event -> LikeMovieConverter.toDTO(event.getMovie()))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 좋아요 삭제
+     * */
+    @Transactional
+    public String deleteLikeMovie(int tmdbId, String userId){
+        User user = getUser(userId);
+        Movie movie = movieRepository.findByTmdbId((long) tmdbId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MOVIE_NOT_FOUND, "해당 영화가 존재하지 않습니다."));
+
+        LikedMovie likedMovie = likeMovieRepository.findByUserAndMovie(user, movie)
+                .orElseThrow(() -> new BusinessException(ErrorCode.LIKE_MOVIE_NOT_FOUND, "좋아요한 영화가 존재하지 않습니다."));
+
+        user.removeLikeMovie(likedMovie);
+        likeMovieRepository.delete(likedMovie);
+        return "좋아요가 취소되었습니다.";
+
     }
 
     private User getUser(String userId) {
