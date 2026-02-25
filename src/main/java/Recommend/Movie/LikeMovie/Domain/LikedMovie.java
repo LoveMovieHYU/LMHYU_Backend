@@ -27,7 +27,7 @@ public class LikedMovie {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "movie_id")
+    @JoinColumn(name = "tmdb_id")
     private Movie movie;
 
     @Column(name = "reaction_type")
