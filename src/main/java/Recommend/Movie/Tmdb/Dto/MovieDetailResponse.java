@@ -35,5 +35,7 @@ public class MovieDetailResponse {
     @Schema(description = "배우", example = "고창석")
     private List<PersonDTO> actors;
 
+    @Schema(description = "사용자 좋아요 여부", example = "true")
+    private boolean isLiked;
 }
 

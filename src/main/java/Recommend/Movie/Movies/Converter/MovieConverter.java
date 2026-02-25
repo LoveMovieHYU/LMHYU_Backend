@@ -19,7 +19,7 @@ public class MovieConverter {
                 .build();
     }
 
-    public static MovieDetailResponse toDetailDTO(Movie movie){
+    public static MovieDetailResponse toDetailDTO(Movie movie, boolean isLiked){
         List<PersonDTO> directors = movie.getPeoples().stream()
                 .map(mp -> mp.getPeople())
                 .filter(p -> p.getJob() == Job.DIRECTOR)
@@ -42,6 +42,7 @@ public class MovieConverter {
                 .rating(movie.getVoteAverage())
                 .actors(actors)
                 .directors(directors)
+                .isLiked(isLiked)
                 .build();
     }
 

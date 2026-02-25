@@ -2,6 +2,7 @@ package Recommend.Movie.Movies.Service;
 
 import Recommend.Movie.Config.Exception.BusinessException;
 import Recommend.Movie.Config.Exception.ErrorCode;
+import Recommend.Movie.LikeMovie.Repository.LikeMovieRepository;
 import Recommend.Movie.Movies.Converter.MovieConverter;
 import Recommend.Movie.Movies.Dto.MovieSearchResponseDTO;
 import Recommend.Movie.Movies.Repository.MovieSpecification;
@@ -25,10 +26,11 @@ import java.util.stream.Collectors;
 public class MovieService {
 
     private final MovieRepository movieRepository;
+    private final LikeMovieRepository likeMovieRepository;
 
 
-    public MovieService(MovieRepository movieRepository) {
-        this.movieRepository = movieRepository;
+    public MovieService(MovieRepository movieRepository,  LikeMovieRepository likeMovieRepository) {
+        this.movieRepository = movieRepository; this.likeMovieRepository = likeMovieRepository;
     }
 
     /**
@@ -52,11 +54,16 @@ public class MovieService {
     /**
      * 영화 상세보기
      * */
-    public MovieDetailResponse getMovieDetail(long tmdbId) {
+    public MovieDetailResponse getMovieDetail(long tmdbId, int userId) {
         Movie movie = movieRepository.findByTmdbIdWithPeople(tmdbId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MOVIE_NOT_FOUND,"영화를 찾을 수 없습니다."));
 
-        return MovieConverter.toDetailDTO(movie);
+        boolean isLiked = false;
+        if (userId > 0) {
+            isLiked = likeMovieRepository.existsByUser_UserIdAndMovie_TmdbId(userId, tmdbId);
+        }
+
+        return MovieConverter.toDetailDTO(movie, isLiked);
     }
 
 }
