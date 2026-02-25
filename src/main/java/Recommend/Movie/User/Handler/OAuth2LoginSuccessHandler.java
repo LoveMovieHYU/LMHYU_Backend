@@ -8,7 +8,6 @@ import Recommend.Movie.Util.JWTUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -50,11 +49,6 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         // Refresh 화이트리스트 저장
         jwtService.addRefresh(name, refreshToken);
 
-
-//        String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:8080/test/oauth/callback") // 여기를 수정!
-//                .queryParam("accessToken", accessToken)
-//                .queryParam("refreshToken", refreshToken)
-//                .build().toUriString();
 
         // 안드로이드 앱으로 리다이렉트 (Deep Link)
         // 스키마(scheme)는 프론트 팀과 상의해서 정해야 함 (여기선 example-app://callback 으로 가정)
