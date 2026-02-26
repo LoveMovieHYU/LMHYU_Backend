@@ -52,8 +52,10 @@ public class MovieResponseController {
     @GetMapping("")
     public ResponseEntity<MovieDetailResponse> getMovieDetail(@RequestParam long tmdbId, Principal principal) {
 
+        int userId = -1;
+
         try{
-            int userId = Integer.parseInt(principal.getName());
+            userId = Integer.parseInt(principal.getName());
 
             BiorhythmScore score = recommendService.getOrCalculateBiorhythm(userId);            //AI 서버로 로그 전송 (비동기라 즉시 리턴됨)
             log.info("Sending AI Log - User:{}", userId);
@@ -63,7 +65,7 @@ public class MovieResponseController {
             log.error("AI 학습 데이터 전송 중 오류 발생 (User: {})", principal.getName(), e);
         }
 
-        return ResponseEntity.ok(movieService.getMovieDetail(tmdbId));
+        return ResponseEntity.ok(movieService.getMovieDetail(tmdbId, userId));
     }
 
     /**
