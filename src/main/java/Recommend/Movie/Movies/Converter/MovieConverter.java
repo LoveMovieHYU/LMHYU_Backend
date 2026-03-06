@@ -12,7 +12,7 @@ public class MovieConverter {
 
     public static MovieSearchResponseDTO toSearchDTO(Movie movie) {
         return MovieSearchResponseDTO.builder()
-                .movieId(movie.getId())
+                .tmdbId(movie.getTmdbId())
                 .title(movie.getTitle())
                 .posterUrl(movie.getPosterPath())
                 .releaseDate(movie.getReleaseDate())
