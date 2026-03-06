@@ -5,20 +5,17 @@ import Recommend.Movie.Config.Exception.ErrorCode;
 import Recommend.Movie.LikeMovie.Repository.LikeMovieRepository;
 import Recommend.Movie.Movies.Converter.MovieConverter;
 import Recommend.Movie.Movies.Dto.MovieSearchResponseDTO;
-import Recommend.Movie.Movies.Repository.MovieSpecification;
 import Recommend.Movie.Tmdb.Dto.MovieDetailResponse;
 import Recommend.Movie.Tmdb.Domain.Movie;
 import Recommend.Movie.Tmdb.Repository.MovieRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,21 +31,24 @@ public class MovieService {
     }
 
     /**
-     * 영화 검색 ( 영화 이름, 배우(감독) 이름 )
+     * 영화 검색 (영화 이름, 배우/감독 이름)
      * */
-    public List<MovieSearchResponseDTO> searchMovies(String keyword, int page){
+    public List<MovieSearchResponseDTO> searchMovies(String keyword, int page) {
 
         int pageNum = (page > 0) ? page - 1 : 0;
-        Pageable pageable = PageRequest.of(pageNum, 10, Sort.by(Sort.Direction.DESC, "releaseDate"));
 
-        Specification<Movie> spec = MovieSpecification.searchByKeyword(keyword);
+        Pageable pageable = PageRequest.of(pageNum, 10);
 
-        Page<Movie> moviePage = movieRepository.findAll(spec, pageable);
+        String searchKeyword = Arrays.stream(keyword.split("\\s+"))
+                .map(word -> "+" + word)
+                .collect(Collectors.joining(" "));
+        String noSpaceKeyword = keyword.replaceAll("\\s+", "");
+
+        Page<Movie> moviePage = movieRepository.searchByKeywordNative(searchKeyword, noSpaceKeyword, pageable);
 
         return moviePage.getContent().stream()
                 .map(MovieConverter::toSearchDTO)
                 .collect(Collectors.toList());
-
     }
 
     /**
