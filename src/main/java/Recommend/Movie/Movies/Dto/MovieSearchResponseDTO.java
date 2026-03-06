@@ -14,7 +14,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class MovieSearchResponseDTO {
     @Schema(title = "영화 ID")
-    private int movieId;
+    private long tmdbId;
     
     @Schema(title = "영화 제목")
     private String title;
