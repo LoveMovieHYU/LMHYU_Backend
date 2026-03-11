@@ -294,13 +294,13 @@ public class RecommendService {
      * */
     private String getStatusMessage(BiorhythmScore s) {
         // 가장 특징적인(높거나 낮은) 점수를 기반으로 멘트 결정
-        if (s.getPhysical() > 70) return "오늘은 에너지가 넘치는 날이네요! 활동적인 영화가 끌리실 거예요.";
-        if (s.getEmotional() > 70) return "감수성이 풍부해지는 오늘, 마음을 울리는 영화 한 편 어때요?";
-        if (s.getIntellectual() > 70) return "두뇌 회전이 빠른 날입니다. 몰입감 넘치는 스토리에 도전해보세요!";
-        if (s.getPhysical() < -70) return "몸이 조금 무거운 날이네요. 편안한 영화로 휴식을 취해보세요.";
-        if (s.getEmotional() < -70) return "기분이 조금 가라앉을 땐, 실컷 웃거나 짜릿한 영화로 기분 전환!";
+        if (s.getPhysical() > 70) return "You seem to have a lot of energy today! You might enjoy an action-packed movie.";
+        if (s.getEmotional() > 70) return "You seem to be in a sensitive mood today. A heartfelt movie might be perfect for you.";
+        if (s.getIntellectual() > 70) return "You’re thinking clearly today. Challenge yourself with a movie that has an immersive storyline.";
+        if (s.getPhysical() < -70) return "You seem a little low on energy today. Take a break with a cozy movie.";
+        if (s.getEmotional() < -70) return "Feeling a little low? Try cheering yourself up with a comedy or a thrilling movie!";
 
-        return "전반적으로 밸런스가 좋은 날입니다. 평점이 높은 명작 영화들을 추천해요!";
+        return "You seem to be in a well-balanced mood today. How about watching some highly rated masterpieces?";
     }
 
     private User getUser(int userId) {
