@@ -30,7 +30,7 @@ public class AiDatasetService {
         try {
             webClient.get()
                     .uri(uriBuilder -> uriBuilder
-                            .path("/api/dataset/{userId}/{movieId}/{p}/{e}/{i}")
+                            .path("/api/dataset/23/W/{userId}/{movieId}/{p}/{e}/{i}")
                             .build(userId, movieId, p, e, i))
                     .retrieve()
                     .toBodilessEntity()
