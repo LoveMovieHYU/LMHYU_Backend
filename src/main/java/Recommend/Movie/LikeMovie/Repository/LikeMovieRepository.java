@@ -19,6 +19,6 @@ public interface LikeMovieRepository extends JpaRepository<LikedMovie,Integer> {
     boolean existsByUser_UserIdAndMovie_TmdbId(int userId, long tmdbId);
 
     @Modifying(clearAutomatically = true)
-    @Query("DELETE FROM LikedMovie lm WHERE lm.user.userId = :userId")
+    @Query(value = "DELETE FROM liked_movie WHERE user_id = :userId", nativeQuery = true)
     void deleteAllByUserId(@Param("userId") int userId);
 }
