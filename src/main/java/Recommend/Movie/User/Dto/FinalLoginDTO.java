@@ -1,5 +1,6 @@
 package Recommend.Movie.User.Dto;
 
+import Recommend.Movie.User.Domain.Gender;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -21,4 +22,6 @@ public class FinalLoginDTO {
     @NotBlank
     private LocalDate birthday;
 
+    @Schema(description = "성별", example = "M 또는 W")
+    private Gender gender;
 }

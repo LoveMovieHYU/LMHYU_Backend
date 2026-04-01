@@ -2,6 +2,7 @@ package Recommend.Movie.User.Service;
 
 import Recommend.Movie.Config.Exception.BusinessException;
 import Recommend.Movie.Config.Exception.ErrorCode;
+import Recommend.Movie.User.Domain.Gender;
 import Recommend.Movie.User.Domain.User;
 import Recommend.Movie.User.Dto.CheckUserResponseDTO;
 import Recommend.Movie.User.Dto.FinalLoginDTO;
@@ -54,22 +55,11 @@ public class UserService extends DefaultOAuth2UserService {
     }
 
 
+    /**
+     * 마이페이지에서 개인정보 수정 용
+     * */
     @Transactional
     public String updateUserInfo(int userId, UpdateUserRequestDTO requestDTO) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "유저가 없습니다."));
-        if (user.getNickname() != null && user.getNickname().equals(requestDTO.getNickName())) {
-            throw new BusinessException(ErrorCode.SAME_NICKNAME, "닉네임이 중복됐습니다.");
-        }
-
-        user.setBirthday(requestDTO.getBirthday());
-        user.setNickname(requestDTO.getNickName());
-        userRepository.save(user);
-        return "업데이트가 완료됐습니다.";
-    }
-
-    @Transactional
-    public String loginUserUpdate(int userId, FinalLoginDTO requestDTO) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "유저가 없습니다."));
         if (user.getNickname() != null && user.getNickname().equals(requestDTO.getNickName())) {
@@ -83,8 +73,28 @@ public class UserService extends DefaultOAuth2UserService {
         if(requestDTO.getNickName() != null){
             user.setNickname(requestDTO.getNickName());
         }
+
         userRepository.save(user);
-        return "업데이트가 완료됐습니다.";
+        return "수정 완료됐습니다.";
+    }
+
+    /**
+     * 로그인 마지막 과정
+     * */
+    @Transactional
+    public String loginUserUpdate(int userId, FinalLoginDTO requestDTO) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "유저가 없습니다."));
+        if (user.getNickname() != null && user.getNickname().equals(requestDTO.getNickName())) {
+            throw new BusinessException(ErrorCode.SAME_NICKNAME, "닉네임이 중복됐습니다.");
+        }
+
+        user.setGender(requestDTO.getGender());
+        user.setNickname(requestDTO.getNickName());
+        user.setBirthday(requestDTO.getBirthday());
+
+        userRepository.save(user);
+        return "회원가입 완료됐습니다.";
     }
 
     public CheckUserResponseDTO checkUserInfo(int userId){
@@ -129,6 +139,6 @@ public class UserService extends DefaultOAuth2UserService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "유저가 없습니다."));
 
         refreshRepository.deleteByName(user.getName());
-        return "삭제완료됐습니다.";
+        return "로그아웃 됐습니다.";
     }
 }
