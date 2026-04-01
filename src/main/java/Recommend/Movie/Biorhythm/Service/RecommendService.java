@@ -69,9 +69,11 @@ public class RecommendService {
      * */
     public List<MovieAiRecommendationDto> getCustomRecommend(Double p, Double e, Double i, int userId){
         AiResponseDTO[] aiResponseArray = null;
-
+        User user = userRepository.findByUserId(userId);
+        int age = getAge(user);
+        String gender = user.getGender().toString();
         try {
-            aiResponseArray = callAiApi(userId, p, e, i);
+            aiResponseArray = callAiApi(userId, p, e, i,age, gender);
         } catch (WebClientResponseException ex) {
             log.error("AI Server Error: Status={}, Body={}", ex.getStatusCode(), ex.getResponseBodyAsString());
             // 필요시 예외 처리 (빈 리스트 반환 or 커스텀 예외 던지기)
@@ -97,7 +99,7 @@ public class RecommendService {
      * 2. 없으면 AI 요청 -> DB 조회 -> Redis 저장 (영화와 감정)-> 반환
      */
     public List<MovieAiRecommendationDto> getbiorhythmBasedRecommendation(int userId) {
-        
+
         String cacheKey = getMovieListCacheKey(userId);
 
         try {
@@ -118,7 +120,8 @@ public class RecommendService {
         saveBioRedis(getBioCacheKey(userId),biorhythmScore); // 바이오리듬 분석 수치 Redis 저장
         log.info("Saved Bio info in Chach ");
 
-
+        int age = getAge(user);
+        String gender = user.getGender().toString();
         double p = biorhythmScore.getPhysical();
         double e = biorhythmScore.getEmotional();
         double i = biorhythmScore.getIntellectual();
@@ -128,7 +131,7 @@ public class RecommendService {
         AiResponseDTO[] aiResponseArray = null;
 
         try {
-            aiResponseArray = callAiApi(userId, p, e, i);
+            aiResponseArray = callAiApi(userId, p, e, i,age, gender);
         } catch (WebClientResponseException ex) {
             log.error("AI Server Error: Status={}, Body={}", ex.getStatusCode(), ex.getResponseBodyAsString());
             // 필요시 예외 처리 (빈 리스트 반환 or 커스텀 예외 던지기)
@@ -182,12 +185,12 @@ public class RecommendService {
     /**
      * AI 영화 리스트 조회 API 호출
      * */
-    private AiResponseDTO[] callAiApi(int userId, double p, double e, double i) {
+    private AiResponseDTO[] callAiApi(int userId, double p, double e, double i, int age, String gender) {
         AiResponseDTO[] aiResponseArray;
         aiResponseArray = webClient.get()
                 .uri(uriBuilder -> uriBuilder
-                        .path("/api/recommend/movie/{userId}/23/W/{p}/{e}/{i}")
-                        .build(userId, p, e, i))
+                        .path("/api/recommend/movie/{userId}/{age}/{gender}/{p}/{e}/{i}")
+                        .build(userId,age,gender, p, e, i))
                 .retrieve()
                 .bodyToMono(AiResponseDTO[].class)
                 .block();
@@ -207,7 +210,7 @@ public class RecommendService {
         String message = getStatusMessage(score);
 
         saveBioRedis(getBioCacheKey(userId),score); // 바이오리듬 분석 수치 Redis 저장
-        
+
         return BiorhythmConverter.toAnalysisDTO(score, message);
     }
 
@@ -222,6 +225,16 @@ public class RecommendService {
         } catch (Exception ex) {
             log.error("Redis save failed", ex);
         }
+    }
+
+    /**
+     * 나이 계산
+     * */
+    private static int getAge(User user) {
+        LocalDate birthday = user.getBirthday();
+        LocalDate now = LocalDate.now();
+        int age = (int) ChronoUnit.YEARS.between(birthday, now);
+        return age;
     }
 
     /**

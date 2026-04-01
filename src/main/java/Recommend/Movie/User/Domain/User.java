@@ -55,7 +55,7 @@ public class User {
 
     private LocalDate createAt;
 
-    @OneToMany(mappedBy = "user", fetch =  FetchType.LAZY)
+    @OneToMany(mappedBy = "user", fetch =  FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<LikedMovie> likedMovieList = new ArrayList<>();
 

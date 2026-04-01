@@ -8,12 +8,12 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
-@Component // Spring이 이 클래스를 관리하도록 @Component를 추가합니다.
+@Component
 public class JWTUtil {
 
     private static SecretKey secretKey;
     private static final Long accessTokenExpiresIn = 3600L * 1000; // 1시간
-    private static final Long refreshTokenExpiresIn = 604800L * 1000; // 7일
+    private static final Long refreshTokenExpiresIn = 1209600L * 1000; // 14일
 
 
     @Value("${JWT_SECRET_KEY}")

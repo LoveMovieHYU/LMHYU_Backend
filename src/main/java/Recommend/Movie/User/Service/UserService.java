@@ -2,7 +2,7 @@ package Recommend.Movie.User.Service;
 
 import Recommend.Movie.Config.Exception.BusinessException;
 import Recommend.Movie.Config.Exception.ErrorCode;
-import Recommend.Movie.User.Domain.Gender;
+import Recommend.Movie.LikeMovie.Repository.LikeMovieRepository;
 import Recommend.Movie.User.Domain.User;
 import Recommend.Movie.User.Dto.CheckUserResponseDTO;
 import Recommend.Movie.User.Dto.FinalLoginDTO;
@@ -21,11 +21,13 @@ public class UserService extends DefaultOAuth2UserService {
 
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final LikeMovieRepository likeMovieRepository;
     private final RefreshRepository refreshRepository;
 
-    public UserService(UserRepository userRepository, JwtService jwtService, RefreshRepository refreshRepository) {
+    public UserService(UserRepository userRepository, JwtService jwtService, LikeMovieRepository likeMovieRepository, RefreshRepository refreshRepository) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
+        this.likeMovieRepository = likeMovieRepository;
         this.refreshRepository = refreshRepository;
     }
 
@@ -34,6 +36,7 @@ public class UserService extends DefaultOAuth2UserService {
     public void deleteUser(int userId) {
         try{
             User user = userRepository.findByUserId(userId);
+            likeMovieRepository.deleteAllByUserId(userId);
             jwtService.removeRefreshUser(user.getName());
             // 유저 삭제
             userRepository.delete(user);
