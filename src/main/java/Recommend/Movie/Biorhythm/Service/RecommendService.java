@@ -71,7 +71,13 @@ public class RecommendService {
         AiResponseDTO[] aiResponseArray = null;
         User user = userRepository.findByUserId(userId);
         int age = getAge(user);
-        String gender = user.getGender().toString();
+
+        String gender = "W";
+        if (user.getGender() == null) {
+            throw new IllegalArgumentException("유저의 성별 정보가 없습니다.");
+        } else {
+            gender = user.getGender().toString();
+        }
         try {
             aiResponseArray = callAiApi(userId, p, e, i,age, gender);
         } catch (WebClientResponseException ex) {
@@ -121,7 +127,12 @@ public class RecommendService {
         log.info("Saved Bio info in Chach ");
 
         int age = getAge(user);
-        String gender = user.getGender().toString();
+        String gender = "W";
+        if (user.getGender() == null) {
+            throw new IllegalArgumentException("유저의 성별 정보가 없습니다.");
+        } else {
+            gender = user.getGender().toString();
+        }
         double p = biorhythmScore.getPhysical();
         double e = biorhythmScore.getEmotional();
         double i = biorhythmScore.getIntellectual();

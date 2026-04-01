@@ -25,7 +25,8 @@ public enum ErrorCode {
     USER_NOT_FOUND("USER_NOT_FOUND", HttpStatus.NOT_FOUND),
     MOVIE_NOT_FOUND("MOVIE_NOT_FOUND", HttpStatus.NOT_FOUND),
     DIARY_NOT_FOUND("DIARY_NOT_FOUND", HttpStatus.NOT_FOUND),
-    LIKE_MOVIE_NOT_FOUND("LIKE_MOVIE_NOT_FOUND", HttpStatus.NOT_FOUND);
+    LIKE_MOVIE_NOT_FOUND("LIKE_MOVIE_NOT_FOUND", HttpStatus.NOT_FOUND),
+    INVALID_INPUT("INVALID_INPUT", HttpStatus.BAD_REQUEST);
 
     public final String code;
     public final HttpStatus httpStatus;

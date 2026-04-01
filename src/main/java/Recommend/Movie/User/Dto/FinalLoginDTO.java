@@ -24,5 +24,6 @@ public class FinalLoginDTO {
     private LocalDate birthday;
 
     @Schema(description = "성별", example = "M 또는 W")
+    @NotBlank
     private String gender;
 }

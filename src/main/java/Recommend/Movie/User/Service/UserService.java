@@ -89,11 +89,21 @@ public class UserService extends DefaultOAuth2UserService {
     public String loginUserUpdate(int userId, FinalLoginDTO requestDTO) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "유저가 없습니다."));
-        if (user.getNickname() != null && user.getNickname().equals(requestDTO.getNickName())) {
-            throw new BusinessException(ErrorCode.SAME_NICKNAME, "닉네임이 중복됐습니다.");
+
+        boolean isDuplicate = userRepository.existsByNickname(requestDTO.getNickName());
+
+        if (isDuplicate && !requestDTO.getNickName().equals(user.getNickname())) {
+            throw new BusinessException(ErrorCode.SAME_NICKNAME, "이미 사용 중인 닉네임입니다.");
         }
 
-        user.setGender(Gender.valueOf(requestDTO.getGender()));
+        try {
+            user.setGender(Gender.valueOf(requestDTO.getGender()));
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "올바르지 않은 성별 값입니다.");
+        }
+
+        user.setNickname(requestDTO.getNickName());
+        user.setBirthday(requestDTO.getBirthday());
         user.setNickname(requestDTO.getNickName());
         user.setBirthday(requestDTO.getBirthday());
 
