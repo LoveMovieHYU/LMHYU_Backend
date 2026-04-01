@@ -3,6 +3,7 @@ package Recommend.Movie.User.Service;
 import Recommend.Movie.Config.Exception.BusinessException;
 import Recommend.Movie.Config.Exception.ErrorCode;
 import Recommend.Movie.LikeMovie.Repository.LikeMovieRepository;
+import Recommend.Movie.User.Domain.Gender;
 import Recommend.Movie.User.Domain.User;
 import Recommend.Movie.User.Dto.CheckUserResponseDTO;
 import Recommend.Movie.User.Dto.FinalLoginDTO;
@@ -92,7 +93,7 @@ public class UserService extends DefaultOAuth2UserService {
             throw new BusinessException(ErrorCode.SAME_NICKNAME, "닉네임이 중복됐습니다.");
         }
 
-        user.setGender(requestDTO.getGender());
+        user.setGender(Gender.valueOf(requestDTO.getGender()));
         user.setNickname(requestDTO.getNickName());
         user.setBirthday(requestDTO.getBirthday());
 
