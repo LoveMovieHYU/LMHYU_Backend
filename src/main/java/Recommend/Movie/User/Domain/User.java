@@ -50,6 +50,9 @@ public class User {
 
     private LocalDate birthday;
 
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
+
     private LocalDate createAt;
 
     @OneToMany(mappedBy = "user", fetch =  FetchType.LAZY)
