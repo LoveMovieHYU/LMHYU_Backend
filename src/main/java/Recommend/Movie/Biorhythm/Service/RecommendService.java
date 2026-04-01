@@ -186,7 +186,7 @@ public class RecommendService {
         AiResponseDTO[] aiResponseArray;
         aiResponseArray = webClient.get()
                 .uri(uriBuilder -> uriBuilder
-                        .path("/api/recommend/movie/23/W/{userId}/{p}/{e}/{i}")
+                        .path("/api/recommend/movie/{userId}/23/W/{p}/{e}/{i}")
                         .build(userId, p, e, i))
                 .retrieve()
                 .bodyToMono(AiResponseDTO[].class)
