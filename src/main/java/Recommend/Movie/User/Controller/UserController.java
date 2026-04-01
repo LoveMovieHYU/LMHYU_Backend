@@ -3,6 +3,7 @@ package Recommend.Movie.User.Controller;
 import Recommend.Movie.Config.Exception.BusinessException;
 import Recommend.Movie.Config.Exception.ErrorCode;
 import Recommend.Movie.User.Dto.CheckUserResponseDTO;
+import Recommend.Movie.User.Dto.FinalLoginDTO;
 import Recommend.Movie.User.Dto.UpdateUserRequestDTO;
 import Recommend.Movie.User.Dto.UserFindResponseDTO;
 import Recommend.Movie.User.Service.UserService;
@@ -72,6 +73,31 @@ public class UserController {
      * PUT /api/user/update
      * */
 
+    @Operation(summary = "유저 정보 업데이트 (소셜 로그인 시, 최초 정보 입력)", description = "사용자의 닉네임과 " +
+            "생년월일을 변경합니다.(소셜 로그인 시, 최초 정보 입력)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "회원가입 성공 "),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 "),
+            @ApiResponse(responseCode = "401", description = "로그인 필요"),
+            @ApiResponse(responseCode = "404", description = "유저를 찾을 수 없음")
+    })
+    @PostMapping("/update")
+    public ResponseEntity<String> loginFinalUser(@Valid @RequestBody FinalLoginDTO requestDTO,
+                                             Principal principal) {
+
+        if(principal == null){
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+
+        String response = userService.loginUserUpdate(Integer.parseInt(principal.getName()), requestDTO);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 유저 정보 변경
+     * PUT /api/user/update
+     * */
+
     @Operation(summary = "유저 정보 업데이트", description = "사용자의 닉네임과 생년월일을 변경합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "변경 성공 "),
@@ -79,7 +105,7 @@ public class UserController {
             @ApiResponse(responseCode = "401", description = "로그인 필요"),
             @ApiResponse(responseCode = "404", description = "유저를 찾을 수 없음")
     })
-    @PutMapping("/update")
+    @PatchMapping("/update")
     public ResponseEntity<String> updateUser(@Valid @RequestBody UpdateUserRequestDTO requestDTO,
                                                      Principal principal) {
 
