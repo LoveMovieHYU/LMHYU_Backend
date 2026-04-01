@@ -1,8 +1,9 @@
 package Recommend.Movie.User.Controller;
 
-
 import Recommend.Movie.User.Dto.JWTResponseDTO;
 import Recommend.Movie.User.Service.JwtService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,9 +22,15 @@ public class JWTController {
      * @param refreshToken 'Authorization-Refresh' 헤더에 담겨 오는 리프레시 토큰
      */
     @PostMapping(value = "/jwt/refresh")
-    public JWTResponseDTO jwtRefreshApi(
+    public ResponseEntity<?> jwtRefreshApi(
             @RequestHeader("Authorization-Refresh") String refreshToken
     ) {
-        return jwtService.refreshRotate(refreshToken);
+        try {
+            JWTResponseDTO newTokens = jwtService.refreshRotate(refreshToken);
+            return ResponseEntity.ok(newTokens);
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        }
     }
 }
