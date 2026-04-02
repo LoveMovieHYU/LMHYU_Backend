@@ -88,7 +88,6 @@ public class UserController {
         if(principal == null){
             throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
         }
-
         String response = userService.loginUserUpdate(Integer.parseInt(principal.getName()), requestDTO);
         return ResponseEntity.ok(response);
     }

@@ -104,8 +104,6 @@ public class UserService extends DefaultOAuth2UserService {
 
         user.setNickname(requestDTO.getNickName());
         user.setBirthday(requestDTO.getBirthday());
-        user.setNickname(requestDTO.getNickName());
-        user.setBirthday(requestDTO.getBirthday());
 
         userRepository.save(user);
         return "회원가입 완료됐습니다.";
