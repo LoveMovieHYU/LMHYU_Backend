@@ -6,9 +6,13 @@ import Recommend.Movie.Tmdb.Converter.MoviesConverter;
 import Recommend.Movie.Tmdb.Domain.*;
 import Recommend.Movie.Tmdb.Dto.*;
 import Recommend.Movie.Tmdb.Repository.*;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -197,6 +201,42 @@ public class TmdbService {
             log.error("Saving movie failed...", ex);
             throw ex;
         }
+    }
+    /**
+     * TMDB ID를 받아 해당 영화의 Popularity 점수를 반환
+     */
+    public Double getPopularityFromTmdb(long tmdbId) {
+
+        String url = UriComponentsBuilder.fromHttpUrl(baseUrl + "/movie/" + tmdbId)
+                .queryParam("api_key", apikey)
+                .queryParam("language", "ko-KR")
+                .toUriString();
+
+        try {
+            ResponseEntity<JsonNode> response = restTemplate.getForEntity(url, JsonNode.class);
+            JsonNode body = response.getBody();
+
+            // popularity 값 파싱
+            if (body != null && body.has("popularity")) {
+                return body.get("popularity").asDouble();
+            }
+
+        } catch (HttpClientErrorException.TooManyRequests tmr) {
+            log.warn("TMDB 429 TooManyRequests tmdbId={}, retry after 2s", tmdbId);
+            sleepSilently(Duration.ofSeconds(2));
+            try {
+                ResponseEntity<JsonNode> retryResponse = restTemplate.getForEntity(url, JsonNode.class);
+                if (retryResponse.getBody() != null && retryResponse.getBody().has("popularity")) {
+                    return retryResponse.getBody().get("popularity").asDouble();
+                }
+            } catch (Exception e2) {
+                log.error("Retry after 429 failed. tmdbId={}", tmdbId, e2);
+            }
+        } catch (Exception e) {
+            log.error("TMDB 인기 점수 조회 실패 (TMDB ID: {}): {}", tmdbId, e.getMessage());
+        }
+
+        return -1.0;
     }
 
     private Company getOrSaveCompany(CompanyDTO dto) {

@@ -44,6 +44,9 @@ public class Movie {
 
     private boolean adult;
 
+    @Column(name = "popularity")
+    private Double popularity;
+
     @Column(name = "original_language")
     private String originalLanguage;
 
