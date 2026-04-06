@@ -13,6 +13,7 @@ public class MoviesConverter {
         movie.setTmdbId(dto.getTmdbId());
         movie.setTitle(dto.getTitle());
         movie.setOverview(dto.getOverview());
+        movie.setVoteCount(dto.getVoteCount());
         movie.setPosterPath(dto.getPosterPath());
         movie.setRuntime(dto.getRuntime());
         movie.setReleaseDate(dto.getReleaseDate());
@@ -31,6 +32,7 @@ public class MoviesConverter {
         if (dto.getReleaseDate() != null) movie.setReleaseDate(dto.getReleaseDate());
         if (dto.getVoteAverage() != null) movie.setVoteAverage(dto.getVoteAverage());
         if (dto.getAdult() != null) movie.setAdult(dto.getAdult());
+        if (dto.getVoteCount() != null) movie.setVoteCount(dto.getVoteCount());
         if (dto.getOriginalLanguage() != null) movie.setOriginalLanguage(dto.getOriginalLanguage());
         return movie;
     }

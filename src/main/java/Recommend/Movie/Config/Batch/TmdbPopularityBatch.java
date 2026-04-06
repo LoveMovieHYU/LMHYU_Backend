@@ -81,7 +81,6 @@ public class TmdbPopularityBatch {
         return movie -> {
             try {
                 // 1. TMDB에서 popularity 가져오기 (가정한 메서드명, 실제 메서드에 맞게 수정)
-                // 여기서 반환값이 TMDB의 popularity (Double)
                 Double popScore = tmdbService.getPopularityFromTmdb(movie.getTmdbId());
                 movie.setPopularity(popScore);
 
