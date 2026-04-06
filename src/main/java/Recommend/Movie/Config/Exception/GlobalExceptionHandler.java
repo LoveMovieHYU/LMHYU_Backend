@@ -26,9 +26,15 @@ import java.util.List;
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
-    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
-    public ResponseEntity<String> handleNoResourceFound(Exception e) {
-        log.warn("잘못된 경로로 접근 시도됨: {}", e.getMessage());
+    @Override
+    protected ResponseEntity<Object> handleNoResourceFoundException(
+            org.springframework.web.servlet.resource.NoResourceFoundException ex,
+            HttpHeaders headers,
+            HttpStatusCode status,
+            WebRequest request) {
+
+        log.warn("잘못된 경로로 접근 시도됨: {}", ex.getMessage());
+
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Not Found");
     }
     /**
