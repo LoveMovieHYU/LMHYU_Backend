@@ -72,7 +72,7 @@ public class RecommendService {
         User user = userRepository.findByUserId(userId);
         int age = getAge(user);
 
-        String gender = "W";
+        String gender;
         if (user.getGender() == null) {
             throw new IllegalArgumentException("유저의 성별 정보가 없습니다.");
         } else {
@@ -82,7 +82,6 @@ public class RecommendService {
             aiResponseArray = callAiApi(userId, p, e, i,age, gender);
         } catch (WebClientResponseException ex) {
             log.error("AI Server Error: Status={}, Body={}", ex.getStatusCode(), ex.getResponseBodyAsString());
-            // 필요시 예외 처리 (빈 리스트 반환 or 커스텀 예외 던지기)
             return List.of();
         } catch (Exception ex) {
             log.error("AI Server Connection Failed", ex);
@@ -179,7 +178,6 @@ public class RecommendService {
                 .map(AiResponseDTO::getMovieId)
                 .collect(Collectors.toList());
 
-        // DB 조회
         List<Movie> movies = movieRepository.findAllByTmdbIdIn(tmdbIds);
 
         Map<Long, Movie> movieMap = movies.stream()
@@ -217,12 +215,12 @@ public class RecommendService {
 
         // 점수 계산
         BiorhythmScore score = calculateScores(user.getBirthday());
-
+        String birthday = user.getBirthday().toString();
         String message = getStatusMessage(score);
 
         saveBioRedis(getBioCacheKey(userId),score); // 바이오리듬 분석 수치 Redis 저장
 
-        return BiorhythmConverter.toAnalysisDTO(score, message);
+        return BiorhythmConverter.toAnalysisDTO(score, message,birthday);
     }
 
     /**
@@ -312,19 +310,27 @@ public class RecommendService {
         BiorhythmScore biorhythmScore = new BiorhythmScore(p, e, i);
         return biorhythmScore;
     }
-
     /**
-     * 바이오리듬 수치에 따른 멘트 선정 로직
-     * */
+     * 바이오리듬 수치 기반 + 연구 근거 반영 추천 멘트
+     */
     private String getStatusMessage(BiorhythmScore s) {
-        // 가장 특징적인(높거나 낮은) 점수를 기반으로 멘트 결정
-        if (s.getPhysical() > 70) return "You seem to have a lot of energy today! You might enjoy an action-packed movie.";
-        if (s.getEmotional() > 70) return "You seem to be in a sensitive mood today. A heartfelt movie might be perfect for you.";
-        if (s.getIntellectual() > 70) return "You’re thinking clearly today. Challenge yourself with a movie that has an immersive storyline.";
-        if (s.getPhysical() < -70) return "You seem a little low on energy today. Take a break with a cozy movie.";
-        if (s.getEmotional() < -70) return "Feeling a little low? Try cheering yourself up with a comedy or a thrilling movie!";
 
-        return "You seem to be in a well-balanced mood today. How about watching some highly rated masterpieces?";
+        if (s.getPhysical() > 70)
+            return "오늘은 에너지와 각성이 높은 상태예요. 연구에 따르면 자극적인 장르가 몰입도를 높여주기 때문에, 액션이나 SF 같은 역동적인 영화를 추천드려요.";
+
+        if (s.getPhysical() < -70)
+            return "오늘은 에너지가 낮은 상태예요. 과도한 자극보다는 안정적인 감정 흐름을 유지할 수 있는 잔잔한 드라마나 힐링 영화를 추천드려요.";
+
+        if (s.getEmotional() > 70)
+            return "오늘은 감정이 풍부한 상태예요. 감정 몰입이 높은 드라마나 로맨스 장르가 더욱 깊은 공감을 이끌어낼 수 있어요.";
+
+        if (s.getEmotional() < -70)
+            return "기분이 다소 낮은 상태예요. 연구에 따르면 코미디 영화가 즐거움을 높이는 데 효과적이기 때문에, 가볍게 웃을 수 있는 영화를 추천드려요.";
+
+        if (s.getIntellectual() > 70)
+            return "오늘은 사고력과 집중력이 높은 상태예요. 스토리 이해가 중요한 SF, 다큐멘터리, 혹은 메시지가 깊은 영화를 추천드려요.";
+
+        return "오늘은 전반적으로 균형 잡힌 상태예요. 다양한 감정을 경험할 수 있는 평점 높은 작품이나 명작 영화를 감상해보는 것을 추천드려요.";
     }
 
     private User getUser(int userId) {

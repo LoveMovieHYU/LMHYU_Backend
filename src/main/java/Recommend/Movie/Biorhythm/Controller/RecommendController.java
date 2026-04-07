@@ -36,7 +36,7 @@ public class RecommendController {
      * 생년월일 기반으로 현재 상태 그래프/멘트용 데이터 반환
      */
     @Operation(summary = "바이오리듬 지수 분석", description = "그래프와 멘트 출력을 위한 바이오리듬 지수를 분석하여 반환합니다." +
-            "ㅗ")
+            "생년월일은 바이오리듬 그래프를 그리는데 사용합니다.")
     @GetMapping("/biorhythm/check")
     public ResponseEntity<BiorhythmAnalysisDTO> analyzeBiorhythm(Principal principal) {
         if (principal == null) throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
@@ -85,8 +85,8 @@ public class RecommendController {
      * 바이오리듬 커스텀 기반 영화 추천
      * GET /api/recommend/custom/list&p=0.5&e=0.1&i=0.2
      * */
-        @Operation(summary = "바이오리듬 수치 커스텀 기반 영화 추천", description = "사용자가 바이오리듬 수치를 커스텀하여 영화 추천 받음." +
-            " Redis 에 따로 저장하지 않습니다. ")
+    @Operation(summary = "바이오리듬 수치 커스텀 기반 영화 추천", description = "사용자가 바이오리듬 수치를 커스텀하여 영화 추천 받음." +
+        " Redis 에 따로 저장하지 않습니다. ")
     @GetMapping("/custom/list")
     public ResponseEntity<List<MovieAiRecommendationDto>> getCustomBiorhythmRecommend(
             @RequestParam("p") Double p,

@@ -18,4 +18,7 @@ public class BiorhythmAnalysisDTO {
 
     @Schema(title = "분석 멘트", example = "두뇌 회전이 빠른 날입니다. 몰입감 넘치는 스토리에 도전해보세요.")
     private String statusMessage;
+
+    @Schema(title = "생년월일", example = "1990-01-01")
+    private String birthDay;
 }
