@@ -7,6 +7,7 @@ import Recommend.Movie.Config.Exception.ErrorCode;
 import Recommend.Movie.Biorhythm.Dto.MovieAiRecommendationDto;
 import Recommend.Movie.User.Dto.UpdateUserRequestDTO;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
