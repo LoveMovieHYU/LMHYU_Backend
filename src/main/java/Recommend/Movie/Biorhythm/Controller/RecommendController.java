@@ -7,7 +7,6 @@ import Recommend.Movie.Config.Exception.ErrorCode;
 import Recommend.Movie.Biorhythm.Dto.MovieAiRecommendationDto;
 import Recommend.Movie.User.Dto.UpdateUserRequestDTO;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -86,8 +85,8 @@ public class RecommendController {
      * 바이오리듬 커스텀 기반 영화 추천
      * GET /api/recommend/custom/list&p=0.5&e=0.1&i=0.2
      * */
-        @Operation(summary = "바이오리듬 수치 커스텀 기반 영화 추천", description = "사용자가 바이오리듬 수치를 커스텀하여 영화 추천 받음." +
-            " Redis 에 따로 저장하지 않습니다. ")
+    @Operation(summary = "바이오리듬 수치 커스텀 기반 영화 추천", description = "사용자가 바이오리듬 수치를 커스텀하여 영화 추천 받음." +
+        " Redis 에 따로 저장하지 않습니다. ")
     @GetMapping("/custom/list")
     public ResponseEntity<List<MovieAiRecommendationDto>> getCustomBiorhythmRecommend(
             @RequestParam("p") Double p,
