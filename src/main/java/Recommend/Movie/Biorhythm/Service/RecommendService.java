@@ -215,12 +215,12 @@ public class RecommendService {
 
         // 점수 계산
         BiorhythmScore score = calculateScores(user.getBirthday());
-
+        String birthday = user.getBirthday().toString();
         String message = getStatusMessage(score);
 
         saveBioRedis(getBioCacheKey(userId),score); // 바이오리듬 분석 수치 Redis 저장
 
-        return BiorhythmConverter.toAnalysisDTO(score, message);
+        return BiorhythmConverter.toAnalysisDTO(score, message,birthday);
     }
 
     /**

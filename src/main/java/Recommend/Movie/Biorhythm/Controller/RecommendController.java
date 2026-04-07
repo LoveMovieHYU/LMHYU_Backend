@@ -37,7 +37,7 @@ public class RecommendController {
      * 생년월일 기반으로 현재 상태 그래프/멘트용 데이터 반환
      */
     @Operation(summary = "바이오리듬 지수 분석", description = "그래프와 멘트 출력을 위한 바이오리듬 지수를 분석하여 반환합니다." +
-            "ㅗ")
+            "생년월일은 바이오리듬 그래프를 그리는데 사용합니다.")
     @GetMapping("/biorhythm/check")
     public ResponseEntity<BiorhythmAnalysisDTO> analyzeBiorhythm(Principal principal) {
         if (principal == null) throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
