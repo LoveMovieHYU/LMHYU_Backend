@@ -22,6 +22,7 @@ public class RecommendConverter {
         return MovieAiRecommendationDto.builder()
                 .id(movie.getTmdbId())
                 .title(movie.getTitle())
+                .popularity(movie.getPopularity())
                 .posterPath(movie.getPosterPath())
                 .releaseDate(movie.getReleaseDate() != null ? movie.getReleaseDate().toString() : null)
                 .voteAverage(movie.getVoteAverage())

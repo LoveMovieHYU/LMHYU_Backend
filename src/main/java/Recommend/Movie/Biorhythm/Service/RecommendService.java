@@ -23,10 +23,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -187,6 +184,7 @@ public class RecommendService {
                 .map(movieMap::get)
                 .filter(Objects::nonNull)
                 .map(RecommendConverter::fromEntity)
+                .sorted(Comparator.comparing(MovieAiRecommendationDto::getPopularity, Comparator.nullsLast(Comparator.reverseOrder())))
                 .collect(Collectors.toList());
         return responseDTO;
     }
