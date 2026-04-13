@@ -3,6 +3,7 @@ package Recommend.Movie.Config;
 
 import Recommend.Movie.User.Handler.OAuth2LoginSuccessHandler;
 import Recommend.Movie.User.Service.CustomOAuthService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -61,6 +62,18 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
+        http
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            if (request.getRequestURI().startsWith("/api/")) {
+                                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                                response.setContentType("application/json;charset=UTF-8");
+                                response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"토큰이 만료되었거나 유효하지 않습니다.\"}");
+                            } else {
+                                response.sendRedirect("/login");
+                            }
+                        })
+                );
         return http.build();
     }
 }
