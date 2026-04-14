@@ -1,5 +1,6 @@
 package Recommend.Movie.User.Service;
 
+import Recommend.Movie.Biorhythm.Service.RecommendService;
 import Recommend.Movie.Config.Exception.BusinessException;
 import Recommend.Movie.Config.Exception.ErrorCode;
 import Recommend.Movie.LikeMovie.Repository.LikeMovieRepository;
@@ -11,10 +12,13 @@ import Recommend.Movie.User.Dto.UpdateUserRequestDTO;
 import Recommend.Movie.User.Dto.UserFindResponseDTO;
 import Recommend.Movie.User.Repository.RefreshRepository;
 import Recommend.Movie.User.Repository.UserRepository;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+
+import java.time.LocalDate;
 
 
 @Service
@@ -24,12 +28,15 @@ public class UserService extends DefaultOAuth2UserService {
     private final JwtService jwtService;
     private final LikeMovieRepository likeMovieRepository;
     private final RefreshRepository refreshRepository;
+    private final RedisTemplate<String, Object> redisTemplate;
 
-    public UserService(UserRepository userRepository, JwtService jwtService, LikeMovieRepository likeMovieRepository, RefreshRepository refreshRepository) {
+    public UserService(UserRepository userRepository, JwtService jwtService, LikeMovieRepository likeMovieRepository,
+                       RefreshRepository refreshRepository, RedisTemplate<String, Object> redisTemplate) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.likeMovieRepository = likeMovieRepository;
         this.refreshRepository = refreshRepository;
+        this.redisTemplate = redisTemplate;
     }
 
     // 자체/소셜 로그인 회원 탈퇴
@@ -60,7 +67,8 @@ public class UserService extends DefaultOAuth2UserService {
 
 
     /**
-     * 마이페이지에서 개인정보 수정 용
+     * 마이페이지에서 개인정보 수정
+     * 생년월일 수정하면 바이오리듬도 새로 계산해야하므로 캐시 삭제
      * */
     @Transactional
     public String updateUserInfo(int userId, UpdateUserRequestDTO requestDTO) {
@@ -72,6 +80,8 @@ public class UserService extends DefaultOAuth2UserService {
 
         if(requestDTO.getBirthday() != null){
             user.setBirthday(requestDTO.getBirthday());
+            redisTemplate.delete(getBioCacheKey(userId)); // 바이오리듬 캐시 삭제
+            redisTemplate.delete(getMovieListCacheKey(userId)); // 영화 리스트 캐시 삭제
         }
 
         if(requestDTO.getNickName() != null){
@@ -153,4 +163,20 @@ public class UserService extends DefaultOAuth2UserService {
         refreshRepository.deleteByName(user.getName());
         return "로그아웃 됐습니다.";
     }
+
+
+    /**
+     * Redis Key 생성 (영화 리스트)
+     * */
+    private String getMovieListCacheKey(int userId) {
+        return "recommend:biorhythm:" + userId + ":" + LocalDate.now();
+    }
+
+    /**
+     * Redis Key 생성 (바이오리듬 리스트)
+     * */
+    private String getBioCacheKey(int userId) {
+        return "biorhythm:" + userId + ":" + LocalDate.now();
+    }
+
 }
