@@ -95,9 +95,11 @@ public class UserController {
     /**
      * 유저 정보 변경
      * PUT /api/user/update
+     *
      * */
 
-    @Operation(summary = "유저 정보 업데이트", description = "사용자의 닉네임과 생년월일을 변경합니다.")
+    @Operation(summary = "유저 정보 업데이트", description = "사용자의 닉네임과 생년월일을 변경합니다." +
+            "닉네임은 중복될 수 없으며, 생년월일을 변경하면 바이오리듬과 영화 리스트 캐시가 삭제됩니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "변경 성공 "),
             @ApiResponse(responseCode = "400", description = "잘못된 요청 "),
