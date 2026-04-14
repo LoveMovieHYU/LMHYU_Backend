@@ -1,6 +1,5 @@
 package Recommend.Movie.User.Service;
 
-import Recommend.Movie.Biorhythm.Service.RecommendService;
 import Recommend.Movie.Config.Exception.BusinessException;
 import Recommend.Movie.Config.Exception.ErrorCode;
 import Recommend.Movie.LikeMovie.Repository.LikeMovieRepository;
@@ -18,7 +17,7 @@ import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserServ
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.time.LocalDate;
+import java.util.Set;
 
 
 @Service
@@ -80,8 +79,7 @@ public class UserService extends DefaultOAuth2UserService {
 
         if(requestDTO.getBirthday() != null){
             user.setBirthday(requestDTO.getBirthday());
-            redisTemplate.delete(getBioCacheKey(userId)); // 바이오리듬 캐시 삭제
-            redisTemplate.delete(getMovieListCacheKey(userId)); // 영화 리스트 캐시 삭제
+            deleteUserBiorhythmCaches(userId);
         }
 
         if(requestDTO.getNickName() != null){
@@ -166,17 +164,21 @@ public class UserService extends DefaultOAuth2UserService {
 
 
     /**
-     * Redis Key 생성 (영화 리스트)
+     * 특정 userId가 있는 Redis 값 삭제 (바이오리듬과 영화 리스트 캐시)
      * */
-    private String getMovieListCacheKey(int userId) {
-        return "recommend:biorhythm:" + userId + ":" + LocalDate.now();
-    }
+    private void deleteUserBiorhythmCaches(int userId) {
+        String bioPattern = "biorhythm:" + userId + ":*";
+        String moviePattern = "recommend:biorhythm:" + userId + ":*";
 
-    /**
-     * Redis Key 생성 (바이오리듬 리스트)
-     * */
-    private String getBioCacheKey(int userId) {
-        return "biorhythm:" + userId + ":" + LocalDate.now();
-    }
+        Set<String> bioKeys = redisTemplate.keys(bioPattern);
+        Set<String> movieKeys = redisTemplate.keys(moviePattern);
 
+        if (bioKeys != null && !bioKeys.isEmpty()) {
+            redisTemplate.delete(bioKeys);
+        }
+
+        if (movieKeys != null && !movieKeys.isEmpty()) {
+            redisTemplate.delete(movieKeys);
+        }
+    }
 }
