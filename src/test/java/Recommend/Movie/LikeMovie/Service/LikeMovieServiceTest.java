@@ -104,7 +104,6 @@ class LikeMovieServiceTest {
 
         // Then
         assertThat(result).hasSize(2);
-        // assertThat(result.get(0).getTmdbId()).isEqualTo(testMovie.getTmdbId());
     }
 
     @Test
