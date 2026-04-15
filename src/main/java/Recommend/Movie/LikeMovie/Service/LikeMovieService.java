@@ -36,10 +36,10 @@ public class LikeMovieService {
      * 추천된 영화 반응 저장
      * */
     @Transactional
-    public String saveMovieReaction(int tmdbId, MovieReactionRequestDTO requestDTO,
+    public String saveMovieReaction(long tmdbId, MovieReactionRequestDTO requestDTO,
                                     String userId){
         User user = getUser(userId);
-        Movie movie = movieRepository.findByTmdbId((long) tmdbId)
+        Movie movie = movieRepository.findByTmdbId(tmdbId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MOVIE_NOT_FOUND, "해당 영화가 존재하지 않습니다."));
 
 
@@ -66,9 +66,9 @@ public class LikeMovieService {
      * 좋아요 삭제
      * */
     @Transactional
-    public String deleteLikeMovie(int tmdbId, String userId){
+    public String deleteLikeMovie(long tmdbId, String userId){
         User user = getUser(userId);
-        Movie movie = movieRepository.findByTmdbId((long) tmdbId)
+        Movie movie = movieRepository.findByTmdbId(tmdbId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MOVIE_NOT_FOUND, "해당 영화가 존재하지 않습니다."));
 
         LikedMovie likedMovie = likeMovieRepository.findByUserAndMovie(user, movie)
