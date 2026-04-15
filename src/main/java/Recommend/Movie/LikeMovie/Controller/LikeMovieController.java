@@ -38,7 +38,7 @@ public class LikeMovieController {
             @ApiResponse(responseCode = "404", description = "존재하지 않는 영화 ID")
     })
     @PostMapping("/{tmdbId}")
-    public ResponseEntity<String> reactionSave(@Parameter(description = "영화 식별자(tmdbId)", example = "123") @PathVariable int tmdbId,
+    public ResponseEntity<String> reactionSave(@Parameter(description = "영화 식별자(tmdbId)", example = "123") @PathVariable long tmdbId,
                                                @RequestBody MovieReactionRequestDTO requestDTO,
                                                Principal principal
                                                ){
@@ -77,7 +77,7 @@ public class LikeMovieController {
             @ApiResponse(responseCode = "401", description = "로그인 필요")
     })
     @DeleteMapping("/{tmdbId}")
-    public ResponseEntity<String> deleteLikeMovie(@Parameter(description = "영화 식별자(tmdbId)", example = "123") @PathVariable int tmdbId,
+    public ResponseEntity<String> deleteLikeMovie(@Parameter(description = "영화 식별자(tmdbId)", example = "123") @PathVariable long tmdbId,
                                                   Principal principal){
         if(principal == null){
             throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
