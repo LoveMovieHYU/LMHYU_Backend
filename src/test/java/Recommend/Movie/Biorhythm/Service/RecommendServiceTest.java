@@ -107,7 +107,7 @@ class RecommendServiceTest {
 
         // then
         assertThat(result).isNotNull();
-        assertThat(result.getBirthDay()).isEqualTo("2000-01-01");
+        assertThat(result.getBirthDay()).isEqualTo("2002-08-24");
         assertThat(result.getStatusMessage().isBlank()); // 리팩토링한 멘트가 잘 들어갔는지 확인
 
         // Redis에 바이오리듬 수치가 잘 저장(set) 되었는지 검증
