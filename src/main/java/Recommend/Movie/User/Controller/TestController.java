@@ -4,7 +4,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@RestController
 public class TestController {
 
     // SuccessHandler가 이 주소로 리다이렉트 시켜주면 브라우저에 토큰을 출력함
