@@ -3,10 +3,7 @@ package Recommend.Movie.Config.Batch;
 import Recommend.Movie.Tmdb.Dto.WorkItem;
 import Recommend.Movie.Tmdb.Service.TmdbService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.batch.item.ItemReader;
-import org.springframework.batch.item.NonTransientResourceException;
-import org.springframework.batch.item.ParseException;
-import org.springframework.batch.item.UnexpectedInputException;
+import org.springframework.batch.item.*;
 
 import java.time.LocalDate;
 import java.util.LinkedList;
@@ -14,7 +11,7 @@ import java.util.List;
 import java.util.Queue;
 
 @Slf4j
-public class TmdbDiscoverItemReader implements ItemReader<WorkItem> {
+public class TmdbDiscoverItemReader implements ItemStreamReader<WorkItem> {
 
     private final TmdbService tmdbService;
     private final boolean includeAdult;
@@ -36,6 +33,26 @@ public class TmdbDiscoverItemReader implements ItemReader<WorkItem> {
     }
 
     @Override
+    public void open(ExecutionContext executionContext) throws ItemStreamException {
+        if (executionContext.containsKey("currentYear")) {
+            this.currentYear = executionContext.getInt("currentYear");
+            this.currentPage = executionContext.getInt("currentPage");
+            log.debug("이전 실패 지점부터 이어서 시작. Year: {}, Page: {}", currentYear, currentPage);
+        }
+    }
+
+    @Override
+    public void update(ExecutionContext executionContext) throws ItemStreamException {
+        executionContext.putInt("currentYear", this.currentYear);
+        executionContext.putInt("currentPage", this.currentPage);
+    }
+
+    @Override
+    public void close() throws ItemStreamException {
+        itemBuffer.clear();
+    }
+
+    @Override
     public WorkItem read() throws Exception, UnexpectedInputException, ParseException, NonTransientResourceException {
         if (!itemBuffer.isEmpty()) {
             return itemBuffer.poll();
@@ -47,7 +64,7 @@ public class TmdbDiscoverItemReader implements ItemReader<WorkItem> {
             }
 
             if (currentPage > maxPage) {
-                log.info("Finished Year {}. Moving to next year.", currentYear);
+                log.debug("Finished Year {}. Moving to next year.", currentYear);
                 currentYear++;
                 currentPage = 1;
                 continue; // 다음 연도 체크를 위해 루프 처음으로
@@ -55,20 +72,18 @@ public class TmdbDiscoverItemReader implements ItemReader<WorkItem> {
 
             // API 호출
             if (currentPage % 10 == 0 || currentPage == 1) {
-                log.info("Fetching API - Year: {}, Page: {}", currentYear, currentPage);
+                log.debug("Fetching API - Year: {}, Page: {}", currentYear, currentPage);
             }
 
             List<WorkItem> fetchedItems = tmdbService.fetchDiscoverPage(currentYear, currentPage, includeAdult);
 
-            // 페이지 증가 (다음 호출을 위해 미리 증가)
             currentPage++;
 
             if (fetchedItems != null && !fetchedItems.isEmpty()) {
                 itemBuffer.addAll(fetchedItems);
                 break;
             } else {
-                // 데이터가 비어있다면 (해당 연도의 끝이거나 데이터 없음), 다음 연도로 바로 점프
-                log.info("No more data for Year {}. Moving to next year.", currentYear);
+                log.debug("No more data for Year {}. Moving to next year.", currentYear);
                 currentYear++;
                 currentPage = 1;
             }

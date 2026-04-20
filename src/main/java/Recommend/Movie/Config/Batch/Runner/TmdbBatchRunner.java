@@ -46,7 +46,7 @@ public class TmdbBatchRunner {
                     .addString("seedVersion", SEED_VERSION)
                     .toJobParameters();
             JobExecution exec = jobLauncher.run(tmdbJob, params);
-            log.info("tmdbJob started: id={}, params={}", exec.getId(), params);
+            log.debug("tmdbJob started: id={}, params={}", exec.getId(), params);
 
         } catch (Exception e){
             log.error("tmdbJob failed : {}", e.getMessage(), e);

@@ -30,7 +30,6 @@ public class TmdbBatch {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
     private final TmdbService tmdbService;
-    private final @Qualifier("dataDBSource") DataSource dataDataSource;
 
     @Bean
     public Job tmdbJob(Step tmdbStep){
@@ -62,7 +61,6 @@ public class TmdbBatch {
     @Bean
     @StepScope
     public TmdbDiscoverItemReader tmdbReader(
-            @Value("#{jobParameters['startPage']}") Long startPage,
             @Value("#{jobParameters['includeAdult']}") String includeAdult
     ){
         int startYear = 2026;
@@ -71,6 +69,7 @@ public class TmdbBatch {
 
         return new TmdbDiscoverItemReader(tmdbService, startYear, incAdult);
     }
+
     @Bean
     @StepScope
     public ItemProcessor<WorkItem, Integer> tmdbProcessor(){
