@@ -227,7 +227,6 @@ public class TmdbService {
         MovieGenre movieGenre = new MovieGenre();
         movieGenre.setGenre(genre);
         movieGenre.setMovie(movie);
-        movie.addGenre(movieGenre);
         return movieGenre;
     }
 
@@ -235,7 +234,6 @@ public class TmdbService {
         MovieCompany movieCompany = new MovieCompany();
         movieCompany.setCompany(company);
         movieCompany.setMovie(movie);
-        movie.addCompany(movieCompany);
         return movieCompany;
     }
 

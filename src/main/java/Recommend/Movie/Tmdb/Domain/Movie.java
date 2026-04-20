@@ -52,24 +52,4 @@ public class Movie {
     @Column(name = "original_language")
     private String originalLanguage;
 
-    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<MovieCompany> companies = new HashSet<>();
-
-    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<MovieGenre> genres = new HashSet<>();
-
-    @OneToMany(mappedBy = "movie", cascade =  CascadeType.ALL, orphanRemoval = true)
-    private Set<MoviePeople> peoples = new HashSet<>();
-
-    public void addGenre(MovieGenre genre) {
-        if (genres == null) genres = new HashSet<>();
-        genres.add(genre);
-        genre.setMovie(this);
-    }
-    public void addCompany(MovieCompany company) {
-        if (company == null) companies = new HashSet<>();
-        companies.add(company);
-        company.setMovie(this);
-    }
-
 }
