@@ -5,8 +5,10 @@ import Recommend.Movie.Config.Exception.ErrorCode;
 import Recommend.Movie.LikeMovie.Repository.LikeMovieRepository;
 import Recommend.Movie.Movies.Converter.MovieConverter;
 import Recommend.Movie.Movies.Dto.MovieSearchResponseDTO;
+import Recommend.Movie.Tmdb.Domain.MoviePeople;
 import Recommend.Movie.Tmdb.Dto.MovieDetailResponse;
 import Recommend.Movie.Tmdb.Domain.Movie;
+import Recommend.Movie.Tmdb.Repository.MoviePeopleRepository;
 import Recommend.Movie.Tmdb.Repository.MovieRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,10 +26,14 @@ public class MovieService {
 
     private final MovieRepository movieRepository;
     private final LikeMovieRepository likeMovieRepository;
+    private final MoviePeopleRepository moviePeopleRepository;
 
 
-    public MovieService(MovieRepository movieRepository,  LikeMovieRepository likeMovieRepository) {
-        this.movieRepository = movieRepository; this.likeMovieRepository = likeMovieRepository;
+    public MovieService(MovieRepository movieRepository, LikeMovieRepository likeMovieRepository,
+                        MoviePeopleRepository moviePeopleRepository) {
+        this.movieRepository = movieRepository;
+        this.likeMovieRepository = likeMovieRepository;
+        this.moviePeopleRepository = moviePeopleRepository;
     }
 
     /**
@@ -62,8 +68,8 @@ public class MovieService {
         if (userId > 0) {
             isLiked = likeMovieRepository.existsByUser_UserIdAndMovie_TmdbId(userId, tmdbId);
         }
-
-        return MovieConverter.toDetailDTO(movie, isLiked);
+        List<MoviePeople> byMovieId = moviePeopleRepository.findByMovie_Id(movie.getId());
+        return MovieConverter.toDetailDTO(movie, byMovieId, isLiked);
     }
 
 }

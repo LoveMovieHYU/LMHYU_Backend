@@ -3,18 +3,20 @@ package Recommend.Movie.Biorhythm.Converter;
 import Recommend.Movie.Biorhythm.Dto.MovieAiRecommendGenresDTO;
 import Recommend.Movie.Biorhythm.Dto.MovieAiRecommendationDto;
 import Recommend.Movie.Tmdb.Domain.Movie;
+import Recommend.Movie.Tmdb.Domain.MovieGenre;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class RecommendConverter {
 
-    public static MovieAiRecommendationDto fromEntity(Movie movie) {
+    public static MovieAiRecommendationDto fromEntity(Movie movie, List<MovieGenre> movieGenres) {
 
-        Set<MovieAiRecommendGenresDTO> genreDtos = (movie.getGenres() == null) ?
+        Set<MovieAiRecommendGenresDTO> genreDtos = (movieGenres == null || movieGenres.isEmpty()) ?
                 Collections.emptySet() :
-                movie.getGenres().stream()
+                movieGenres.stream()
                         .map(movieGenre ->
                                 new MovieAiRecommendGenresDTO(movieGenre.getGenre().getName()))
                         .collect(Collectors.toSet());

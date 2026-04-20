@@ -9,6 +9,8 @@ import Recommend.Movie.Biorhythm.Converter.RecommendConverter;
 import Recommend.Movie.Biorhythm.Dto.AiResponseDTO;
 import Recommend.Movie.Biorhythm.Dto.MovieAiRecommendationDto;
 import Recommend.Movie.Tmdb.Domain.Movie;
+import Recommend.Movie.Tmdb.Domain.MovieGenre;
+import Recommend.Movie.Tmdb.Repository.MovieGenreRepository;
 import Recommend.Movie.Tmdb.Repository.MovieRepository;
 import Recommend.Movie.User.Domain.User;
 import Recommend.Movie.User.Dto.UpdateUserRequestDTO;
@@ -37,14 +39,16 @@ public class RecommendService {
     private final MovieRepository movieRepository;
     private final UserRepository userRepository;
     private final UserService userService;
+    private final MovieGenreRepository movieGenreRepository;
     private final RedisTemplate<String, Object> redisTemplate;
 
     public RecommendService(WebClient webClient, MovieRepository movieRepository,
-                            UserRepository userRepository, UserService userService, RedisTemplate<String, Object> redisTemplate) {
+                            UserRepository userRepository, UserService userService, MovieGenreRepository movieGenreRepository, RedisTemplate<String, Object> redisTemplate) {
         this.webClient = webClient;
         this.movieRepository = movieRepository;
         this.userRepository = userRepository;
         this.userService = userService;
+        this.movieGenreRepository = movieGenreRepository;
         this.redisTemplate = redisTemplate;
     }
 
@@ -177,15 +181,29 @@ public class RecommendService {
 
         List<Movie> movies = movieRepository.findAllByTmdbIdIn(tmdbIds);
 
+        List<Integer> movieIds = movies.stream()
+                .map(Movie::getId)
+                .collect(Collectors.toList());
+
+        // 추출한 영화 PK 목록으로 장르 매핑 정보를 한번에 조회 ( N+1 문제 방지 )
+        List<MovieGenre> allMovieGenres = movieGenreRepository.findByMovie_IdIn(movieIds);
+
+        Map<Integer, List<MovieGenre>> genreMap = allMovieGenres.stream()
+                .collect(Collectors.groupingBy(mg -> mg.getMovie().getId())); // 장르를 영화 ID 기준으로 그룹화
+
         Map<Long, Movie> movieMap = movies.stream()
-                .collect(Collectors.toMap(Movie::getTmdbId, Function.identity()));
+                .collect(Collectors.toMap(Movie::getTmdbId, Function.identity())); // tmdbId를 key 로 가지는 Movie Map 생성
 
         List<MovieAiRecommendationDto> responseDTO = tmdbIds.stream()
                 .map(movieMap::get)
                 .filter(Objects::nonNull)
-                .map(RecommendConverter::fromEntity)
+                .map(movie -> {
+                    List<MovieGenre> genres = genreMap.getOrDefault(movie.getId(), Collections.emptyList());
+                    return RecommendConverter.fromEntity(movie, genres);
+                })
                 .sorted(Comparator.comparing(MovieAiRecommendationDto::getPopularity, Comparator.nullsLast(Comparator.reverseOrder())))
                 .collect(Collectors.toList());
+
         return responseDTO;
     }
 

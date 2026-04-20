@@ -3,6 +3,7 @@ package Recommend.Movie.Movies.Converter;
 import Recommend.Movie.Movies.Dto.MovieSearchResponseDTO;
 import Recommend.Movie.Tmdb.Domain.Job;
 import Recommend.Movie.Tmdb.Domain.Movie;
+import Recommend.Movie.Tmdb.Domain.MoviePeople;
 import Recommend.Movie.Tmdb.Dto.MovieDetailResponse;
 import Recommend.Movie.Movies.Dto.PersonDTO;
 
@@ -19,16 +20,18 @@ public class MovieConverter {
                 .build();
     }
 
-    public static MovieDetailResponse toDetailDTO(Movie movie, boolean isLiked){
-        List<PersonDTO> directors = movie.getPeoples().stream()
-                .map(mp -> mp.getPeople())
+    public static MovieDetailResponse toDetailDTO(Movie movie, List<MoviePeople> moviePeoples,
+                                                  boolean isLiked){
+
+        List<PersonDTO> directors = moviePeoples.stream()
+                .map(MoviePeople::getPeople)
                 .filter(p -> p.getJob() == Job.DIRECTOR)
                 .limit(3)
                 .map(PersonDTO::from)
                 .toList();
 
-        List<PersonDTO> actors = movie.getPeoples().stream()
-                .map(mp -> mp.getPeople())
+        List<PersonDTO> actors = moviePeoples.stream()
+                .map(MoviePeople::getPeople)
                 .filter(p -> p.getJob() == Job.ACTOR)
                 .limit(10)
                 .map(PersonDTO::from)
