@@ -9,8 +9,10 @@ import java.util.Set;
 
 @Entity
 @Getter
-@Setter
 @Table(name = "movie")
+@Builder(toBuilder = true)
+@NoArgsConstructor
+@AllArgsConstructor
 public class Movie {
 
     @Id
@@ -68,11 +70,6 @@ public class Movie {
         if (company == null) companies = new HashSet<>();
         companies.add(company);
         company.setMovie(this);
-    }
-    public void addPeople(MoviePeople people) {
-        if (peoples == null) peoples = new HashSet<>();
-        peoples.add(people);
-        people.setMovie(this);
     }
 
 }

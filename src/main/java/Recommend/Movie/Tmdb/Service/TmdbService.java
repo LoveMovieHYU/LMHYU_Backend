@@ -6,7 +6,6 @@ import Recommend.Movie.Tmdb.Converter.MoviesConverter;
 import Recommend.Movie.Tmdb.Domain.*;
 import Recommend.Movie.Tmdb.Dto.*;
 import Recommend.Movie.Tmdb.Repository.*;
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -47,7 +46,7 @@ public class TmdbService {
     private String baseUrl;
 
     /**
-     * 특정 연도(year)와 페이지(page)에 해당하는 데이터만 API로 가져와서 반환합니다.
+     * 특정 연도(year)와 페이지(page)에 해당하는 데이터만 API로 가져와서 반환
      * ItemReader에서 이 메서드를 반복 호출하게 됩니다.
      */
     public List<WorkItem> fetchDiscoverPage(int year, int page, boolean includeAdult) {
@@ -83,7 +82,6 @@ public class TmdbService {
                 items.add(new WorkItem(summary.getId()));
             }
 
-            // 너무 빠른 요청 방지 (0.1초 대기)
             sleepSilently(Duration.ofMillis(100));
 
             return items;
@@ -93,8 +91,6 @@ public class TmdbService {
             if (e.getStatusCode().value() == 429) {
                 log.warn("Rate limit exceeded. Sleeping for 2 seconds...");
                 sleepSilently(Duration.ofSeconds(2));
-                // 429 발생 시 빈 리스트 리턴 -> Reader가 다음 호출 시 재시도하거나 넘어가는 로직 필요
-                // 간단하게는 이번 페이지 건너뜀 처리
             }
             return Collections.emptyList();
         } catch (Exception e) {
@@ -145,9 +141,15 @@ public class TmdbService {
      */
     @Transactional
     public void fetchAndSaveMovieDetail(int movieId) {
-        log.info("[MovieBatch] START fetch & save movie detail. movieId={}", movieId);
+        log.debug("[MovieBatch] START fetch & save movie detail. movieId={}", movieId);
         MovieDetailDTO detailDTO = fetchMovieDetailOnly(movieId);
         if (detailDTO == null) return;
+
+        if (detailDTO.getPopularity() != null && detailDTO.getPopularity() <= 1.0) {
+            log.debug("필터링 스킵 (popularity <= 1.0) - movieId={}, title={}, popularity={}",
+                    movieId, detailDTO.getTitle(), detailDTO.getPopularity());
+            return;
+        }
 
         try {
             // Movie 저장 (먼저 저장하여 영속 상태로 만듦)
@@ -155,16 +157,13 @@ public class TmdbService {
             movie = movieRepository.saveAndFlush(movie);
             peopleService.fetchAndSaveCreditsByMovieId(movie, true);
 
-            // Genre 처리
             if (detailDTO.getGenres() != null) {
                 for (GenreDTO genreDTO : detailDTO.getGenres()) {
                     if (genreDTO == null) continue;
 
-                    // 별도 트랜잭션으로 확실히 저장/조회
                     Genre detachedGenre = getOrSaveGenre(genreDTO);
 
                     // 현재 트랜잭션의 영속성 컨텍스트로 다시 불러오기
-                    // 이미 DB에 있는 것이 확실하므로 getReferenceById 사용 가능
                     Genre managedGenre = genreRepository.getReferenceById(detachedGenre.getId());
 
                     if (!movieGenreRepository.existsByMovie_IdAndGenre_Id(movie.getId(), managedGenre.getId())) {
@@ -174,15 +173,12 @@ public class TmdbService {
                 }
             }
 
-            // Company 처리
             if (detailDTO.getProductionCompanies() != null) {
                 for (CompanyDTO companyDTO : detailDTO.getProductionCompanies()) {
                     if (companyDTO == null) continue;
 
-                    // 별도 트랜잭션으로 확실히 저장/조회
                     Company detachedCompany = getOrSaveCompany(companyDTO);
 
-                    // 현재 트랜잭션으로 다시 불러오기 (영속화)
                     Company managedCompany = companyRepository.getReferenceById(detachedCompany.getId());
 
                     if (!movieCompanyRepository.existsByMovie_IdAndCompany_Id(movie.getId(), managedCompany.getId())) {
@@ -191,7 +187,7 @@ public class TmdbService {
                     }
                 }
             }
-            log.info("[MovieBatch] DONE movieId={}, tmdbId={}, title={}",
+            log.debug("[MovieBatch] DONE movieId={}, tmdbId={}, title={}",
                     movieId, detailDTO.getTmdbId(), detailDTO.getTitle());
 
         } catch (Exception ex) {
@@ -199,54 +195,14 @@ public class TmdbService {
             throw ex;
         }
     }
-    /**
-     * TMDB ID를 받아 해당 영화의 Popularity 점수를 반환
-     */
-    public Double getPopularityFromTmdb(long tmdbId) {
-
-        String url = UriComponentsBuilder.fromHttpUrl(baseUrl + "/movie/" + tmdbId)
-                .queryParam("api_key", apikey)
-                .queryParam("language", "ko-KR")
-                .toUriString();
-
-        try {
-            ResponseEntity<JsonNode> response = restTemplate.getForEntity(url, JsonNode.class);
-            JsonNode body = response.getBody();
-
-            // popularity 값 파싱
-            if (body != null && body.has("popularity")) {
-                return body.get("popularity").asDouble();
-            }
-
-        } catch (HttpClientErrorException.TooManyRequests tmr) {
-            log.warn("TMDB 429 TooManyRequests tmdbId={}, retry after 2s", tmdbId);
-            sleepSilently(Duration.ofSeconds(2));
-            try {
-                ResponseEntity<JsonNode> retryResponse = restTemplate.getForEntity(url, JsonNode.class);
-                if (retryResponse.getBody() != null && retryResponse.getBody().has("popularity")) {
-                    return retryResponse.getBody().get("popularity").asDouble();
-                }
-            } catch (Exception e2) {
-                log.error("Retry after 429 failed. tmdbId={}", tmdbId, e2);
-            }
-        } catch (Exception e) {
-            log.error("TMDB 인기 점수 조회 실패 (TMDB ID: {}): {}", tmdbId, e.getMessage());
-        }
-
-        return -1.0;
-    }
-
     private Company getOrSaveCompany(CompanyDTO dto) {
-        // 먼저 조회 시도
         return companyRepository.findById(dto.getId())
                 .orElseGet(() -> {
-                    // 없으면 별도 트랜잭션으로 저장 시도
                     TransactionTemplate tt = new TransactionTemplate(transactionManager);
                     tt.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                     try {
                         return tt.execute(status -> companyRepository.saveAndFlush(CompanyConverter.toEntity(dto)));
                     } catch (Exception e) {
-                        // 동시성 문제로 저장이 실패했다면, 누군가 저장한 것이므로 다시 조회
                         return companyRepository.findById(dto.getId())
                                 .orElseThrow(() -> new IllegalStateException("Company save failed and not found: " + dto.getId()));
                     }

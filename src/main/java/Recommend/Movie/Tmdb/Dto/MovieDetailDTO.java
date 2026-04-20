@@ -39,4 +39,7 @@ public class MovieDetailDTO {
 
     @JsonProperty("production_companies")
     private List<CompanyDTO> productionCompanies;
+
+    @JsonProperty("popularity")
+    private Double popularity;
 }

@@ -13,11 +13,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
-/**
- * [신규] 커스텀 ItemReader
- * - read()가 호출될 때 버퍼가 비어있으면 API를 호출하여 채웁니다.
- * - 연도별, 페이지별로 순차적으로 데이터를 가져옵니다.
- */
 @Slf4j
 public class TmdbDiscoverItemReader implements ItemReader<WorkItem> {
 

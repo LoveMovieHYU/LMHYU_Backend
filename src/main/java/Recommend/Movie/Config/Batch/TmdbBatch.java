@@ -45,7 +45,7 @@ public class TmdbBatch {
                          ItemProcessor<WorkItem, Integer> tmdbProcessor,
                          ItemWriter<Integer> tmdbWriter){
         return new StepBuilder("tmdbStep", jobRepository)
-                .<WorkItem, Integer>chunk(100, transactionManager)
+                .<WorkItem, Integer>chunk(50, transactionManager)
                 .reader(tmdbReader)
                 .processor(tmdbProcessor)
                 .writer(tmdbWriter)
@@ -53,14 +53,16 @@ public class TmdbBatch {
                 .retry(org.springframework.web.client.ResourceAccessException.class)
                 .retry(java.net.SocketTimeoutException.class)
                 .retryLimit(3)
-                .backOffPolicy(new FixedBackOffPolicy() {{ setBackOffPeriod(1000L); }})
+                .backOffPolicy(new FixedBackOffPolicy() {{ setBackOffPeriod(2000L); }})
+                .skip(Exception.class)
+                .skipLimit(1000)
                 .build();
     }
 
     @Bean
     @StepScope
-    public ItemReader<WorkItem> tmdbReader(
-            @Value("#{jobParameters['startPage']}") Long startPage, // (이제 안 쓰지만 파라미터 에러 방지용으로 둠)
+    public TmdbDiscoverItemReader tmdbReader(
+            @Value("#{jobParameters['startPage']}") Long startPage,
             @Value("#{jobParameters['includeAdult']}") String includeAdult
     ){
         int startYear = 2026;
@@ -79,11 +81,8 @@ public class TmdbBatch {
     public ItemWriter<Integer> tmdbWriter(){
         return items -> {
             for (Integer movieId : items) {
-                try{
-                    tmdbService.fetchAndSaveMovieDetail(movieId);
-                } catch(Exception e){
-                    log.error("Failed to save movie id: {}", movieId, e);
-                }
+                log.debug("Processing movieId: {}", movieId);
+                tmdbService.fetchAndSaveMovieDetail(movieId);
             }
         };
     }

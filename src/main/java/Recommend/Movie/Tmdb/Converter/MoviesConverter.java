@@ -9,32 +9,35 @@ import java.util.Objects;
 public class MoviesConverter {
     public static Movie toEntity(MovieDetailDTO dto) {
         Objects.requireNonNull(dto, "dto must not be null");
-        Movie movie = new Movie();
-        movie.setTmdbId(dto.getTmdbId());
-        movie.setTitle(dto.getTitle());
-        movie.setOverview(dto.getOverview());
-        movie.setVoteCount(dto.getVoteCount());
-        movie.setPosterPath(dto.getPosterPath());
-        movie.setRuntime(dto.getRuntime());
-        movie.setReleaseDate(dto.getReleaseDate());
-        movie.setVoteAverage(dto.getVoteAverage() == null ? 0 : (int)Math.round(dto.getVoteAverage()));
-        movie.setAdult(dto.getAdult());
-        movie.setOriginalLanguage(dto.getOriginalLanguage());
-        return movie;
+
+        return Movie.builder()
+                .tmdbId(dto.getTmdbId())
+                .title(dto.getTitle())
+                .overview(dto.getOverview())
+                .voteCount(dto.getVoteCount())
+                .posterPath(dto.getPosterPath())
+                .runtime(dto.getRuntime())
+                .releaseDate(dto.getReleaseDate())
+                .voteAverage(dto.getVoteAverage() == null ? 0 : (int)Math.round(dto.getVoteAverage()))
+                .adult(dto.getAdult())
+                .originalLanguage(dto.getOriginalLanguage())
+                .popularity(dto.getPopularity())
+                .build();
 
     }
 
     public static Movie updateFromDTO(Movie movie, MovieDetailDTO dto) {
-        if (dto.getTitle() != null) movie.setTitle(dto.getTitle());
-        if (dto.getOverview() != null) movie.setOverview(dto.getOverview());
-        if (dto.getPosterPath() != null) movie.setPosterPath(dto.getPosterPath());
-        if (dto.getRuntime() != null) movie.setRuntime(dto.getRuntime());
-        if (dto.getReleaseDate() != null) movie.setReleaseDate(dto.getReleaseDate());
-        if (dto.getVoteAverage() != null) movie.setVoteAverage(dto.getVoteAverage());
-        if (dto.getAdult() != null) movie.setAdult(dto.getAdult());
-        if (dto.getVoteCount() != null) movie.setVoteCount(dto.getVoteCount());
-        if (dto.getOriginalLanguage() != null) movie.setOriginalLanguage(dto.getOriginalLanguage());
-        return movie;
+        Movie.MovieBuilder b = movie.toBuilder();
+        if (dto.getTitle() != null) b.title(dto.getTitle());
+        if (dto.getOverview() != null) b.overview(dto.getOverview());
+        if (dto.getPosterPath() != null) b.posterPath(dto.getPosterPath());
+        if (dto.getRuntime() != null) b.runtime(dto.getRuntime());
+        if (dto.getReleaseDate() != null) b.releaseDate(dto.getReleaseDate());
+        if (dto.getVoteAverage() != null) b.voteAverage(dto.getVoteAverage());
+        if (dto.getAdult() != null) b.adult(dto.getAdult());
+        if (dto.getVoteCount() != null) b.voteCount(dto.getVoteCount());
+        if (dto.getOriginalLanguage() != null) b.originalLanguage(dto.getOriginalLanguage());
+        return b.build();
     }
 
 }

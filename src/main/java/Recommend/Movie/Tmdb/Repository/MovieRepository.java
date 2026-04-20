@@ -35,7 +35,8 @@ public interface MovieRepository extends JpaRepository<Movie, Integer>, JpaSpeci
                     "    JOIN people p ON mp.people_id = p.id " +
                     "    WHERE MATCH(p.name) AGAINST(:keyword IN BOOLEAN MODE)" +
                     ") " +
-                    "ORDER BY (MATCH(m.title) AGAINST(:keyword IN BOOLEAN MODE) + MATCH(m.title_no_space) AGAINST(:noSpaceKeyword IN BOOLEAN MODE)) DESC, m.release_date DESC",
+                    "ORDER BY (MATCH(m.title) AGAINST(:keyword IN BOOLEAN MODE) + " +
+                    "MATCH(m.title_no_space) AGAINST(:noSpaceKeyword IN BOOLEAN MODE)) DESC, m.release_date DESC",
 
             countQuery = "SELECT count(*) FROM movie m " +
                     "WHERE MATCH(m.title) AGAINST(:keyword IN BOOLEAN MODE) " +
