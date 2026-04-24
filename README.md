@@ -70,4 +70,4 @@ Markdown# 🎬 HYMV (Here is Your Movie)
 
 ## 🏛 시스템 아키텍처 (System Architecture)
 
-![시스템아키텍처.png](%EC%8B%9C%EC%8A%A4%ED%85%9C%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98.png)
+<img width="6368" height="3926" alt="image" src="https://github.com/user-attachments/assets/e4e06420-e130-4ac8-bd3b-21e749e0af55" />
