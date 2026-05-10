@@ -4,6 +4,7 @@ package Recommend.Movie.Config;
 import Recommend.Movie.User.Handler.OAuth2LoginSuccessHandler;
 import Recommend.Movie.User.Service.CustomOAuthService;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -17,26 +18,31 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final CustomOAuthService customOAuthService;
+    private final boolean devEndpointsEnabled;
 
-    public SecurityConfig(OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler, CustomOAuthService customOAuthService) {
+    public SecurityConfig(OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler,
+                          CustomOAuthService customOAuthService,
+                          @Value("${app.security.dev-endpoints-enabled:false}") boolean devEndpointsEnabled) {
         this.oAuth2LoginSuccessHandler = oAuth2LoginSuccessHandler;
         this.customOAuthService = customOAuthService;
+        this.devEndpointsEnabled = devEndpointsEnabled;
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         // 경로별 인가 작업
         http
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/jwt/refresh", "/api/movies/**","/api/home", "/api/search/**").permitAll() // tmdb 허용
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**").permitAll() // swagger 허용
-                        .requestMatchers("/", "/login-test.html", "/test/**").permitAll() // 테스트 경로 허용
-                        .requestMatchers("/api/v1/auth/**", "/oauth2/**").permitAll() // 소셜 로그인 허용
-                        .requestMatchers("/api/feedback/**").permitAll()
-                        .requestMatchers("/login/**").permitAll()
-                        // 그 외 모든 요청은 인증된 사용자만 접근 가능
-                        .anyRequest().authenticated()
-                );
+                .authorizeHttpRequests(auth -> {
+                    auth.requestMatchers("/jwt/refresh", "/api/movies/**", "/api/home", "/api/search/**").permitAll();
+                    auth.requestMatchers("/api/v1/auth/**", "/oauth2/**").permitAll();
+                    auth.requestMatchers("/api/feedback/**").permitAll();
+                    auth.requestMatchers("/login/**").permitAll();
+                    if (devEndpointsEnabled) {
+                        auth.requestMatchers("/", "/login-test.html", "/test/**", "/swagger-ui/**",
+                                "/v3/api-docs/**", "/swagger-resources/**").permitAll();
+                    }
+                    auth.anyRequest().authenticated();
+                });
 
         // CSRF, Form Login, HTTP Basic 인증 비활성화
         http
@@ -76,4 +82,5 @@ public class SecurityConfig {
                 );
         return http.build();
     }
+
 }

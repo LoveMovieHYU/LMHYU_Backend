@@ -20,8 +20,6 @@ public interface MovieRepository extends JpaRepository<Movie, Integer>, JpaSpeci
 
     @Query("""
     SELECT DISTINCT m FROM Movie m
-    LEFT JOIN FETCH m.peoples mp
-    LEFT JOIN FETCH mp.people p
     WHERE m.tmdbId = :tmdbId
     """)
     Optional<Movie> findByTmdbIdWithPeople(@Param("tmdbId") long tmdbId);

@@ -12,13 +12,12 @@ import Recommend.Movie.User.Dto.UserFindResponseDTO;
 import Recommend.Movie.User.Repository.RefreshRepository;
 import Recommend.Movie.User.Repository.UserRepository;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.Set;
-
 
 @Service
 public class UserService extends DefaultOAuth2UserService {
@@ -38,51 +37,35 @@ public class UserService extends DefaultOAuth2UserService {
         this.redisTemplate = redisTemplate;
     }
 
-    // 자체/소셜 로그인 회원 탈퇴
     @Transactional
     public void deleteUser(int userId) {
-        try{
-            User user = userRepository.findByUserId(userId);
-            likeMovieRepository.deleteAllByUserId(userId);
-            jwtService.removeRefreshUser(user.getName());
-            // 유저 삭제
-            userRepository.delete(user);
-        } catch (BusinessException ex){
-            throw new BusinessException(ErrorCode.USER_NOT_FOUND, "유저가 없습니다.");
-        }
+        User user = getUserByUserId(userId);
+        likeMovieRepository.deleteAllByUserId(userId);
+        jwtService.removeRefreshUser(user.getName());
+        userRepository.delete(user);
     }
 
-    // 자체/소셜 유저 정보 조회
     @Transactional(readOnly = true)
     public UserFindResponseDTO readUser(int userId) {
-        try{
-            User user = userRepository.findByUserId(userId);
-            UserFindResponseDTO responseDTO = new UserFindResponseDTO(user.getName(), user.getEmail(),user.getNickname());
-            return responseDTO;
-        } catch (BusinessException ex){
-            throw new BusinessException(ErrorCode.USER_NOT_FOUND, "유저가 없습니다.");
-        }
+        User user = getUserByUserId(userId);
+        return new UserFindResponseDTO(user.getName(), user.getEmail(), user.getNickname());
     }
 
-
-    /**
-     * 마이페이지에서 개인정보 수정
-     * 생년월일 수정하면 바이오리듬도 새로 계산해야하므로 캐시 삭제
-     * */
     @Transactional
     public String updateUserInfo(int userId, UpdateUserRequestDTO requestDTO) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "유저가 없습니다."));
+
         if (user.getNickname() != null && user.getNickname().equals(requestDTO.getNickName())) {
             throw new BusinessException(ErrorCode.SAME_NICKNAME, "닉네임이 중복됐습니다.");
         }
 
-        if(requestDTO.getBirthday() != null){
+        if (requestDTO.getBirthday() != null) {
             user.setBirthday(requestDTO.getBirthday());
             deleteUserBiorhythmCaches(userId);
         }
 
-        if(requestDTO.getNickName() != null){
+        if (requestDTO.getNickName() != null) {
             user.setNickname(requestDTO.getNickName());
         }
 
@@ -90,16 +73,12 @@ public class UserService extends DefaultOAuth2UserService {
         return "수정 완료됐습니다.";
     }
 
-    /**
-     * 로그인 마지막 과정
-     * */
     @Transactional
     public String loginUserUpdate(int userId, FinalLoginDTO requestDTO) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "유저가 없습니다."));
 
         boolean isDuplicate = userRepository.existsByNickname(requestDTO.getNickName());
-
         if (isDuplicate && !requestDTO.getNickName().equals(user.getNickname())) {
             throw new BusinessException(ErrorCode.SAME_NICKNAME, "이미 사용 중인 닉네임입니다.");
         }
@@ -117,12 +96,12 @@ public class UserService extends DefaultOAuth2UserService {
         return "회원가입 완료됐습니다.";
     }
 
-    public CheckUserResponseDTO checkUserInfo(int userId){
+    public CheckUserResponseDTO checkUserInfo(int userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "유저가 없습니다."));
 
         boolean hasNickname = StringUtils.hasText(user.getNickname());
-        boolean hasBirthday = (user.getBirthday() != null);
+        boolean hasBirthday = user.getBirthday() != null;
 
         if (!hasNickname && !hasBirthday) {
             return CheckUserResponseDTO.builder()
@@ -154,7 +133,7 @@ public class UserService extends DefaultOAuth2UserService {
                 .build();
     }
 
-    public String logoutUser(int userId){
+    public String logoutUser(int userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "유저가 없습니다."));
 
@@ -162,10 +141,6 @@ public class UserService extends DefaultOAuth2UserService {
         return "로그아웃 됐습니다.";
     }
 
-
-    /**
-     * 특정 userId가 있는 Redis 값 삭제 (바이오리듬과 영화 리스트 캐시)
-     * */
     private void deleteUserBiorhythmCaches(int userId) {
         String bioPattern = "biorhythm:" + userId + ":*";
         String moviePattern = "recommend:biorhythm:" + userId + ":*";
@@ -180,5 +155,13 @@ public class UserService extends DefaultOAuth2UserService {
         if (movieKeys != null && !movieKeys.isEmpty()) {
             redisTemplate.delete(movieKeys);
         }
+    }
+
+    private User getUserByUserId(int userId) {
+        User user = userRepository.findByUserId(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND, "유저가 없습니다.");
+        }
+        return user;
     }
 }

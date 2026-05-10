@@ -1,11 +1,16 @@
 package Recommend.Movie.Biorhythm.Service;
 
 import Recommend.Movie.Biorhythm.Dto.BiorhythmScore;
+import Recommend.Movie.User.Domain.User;
+import Recommend.Movie.User.Repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 
 @Service
 @Slf4j
@@ -13,6 +18,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 public class AiDatasetService {
 
     private final WebClient webClient;
+    private final UserRepository userRepository;
 
     /**
      * AI 학습용 데이터셋 전송 (비동기)
@@ -26,12 +32,21 @@ public class AiDatasetService {
         double e = score.getEmotional();
         double i = score.getIntellectual();
 
+        User user = userRepository.findByUserId(userId);
+        if (user == null || user.getBirthday() == null || user.getGender() == null) {
+            log.debug("Skip AI interaction log. User profile is incomplete. userId={}", userId);
+            return;
+        }
+
+        int age = (int) ChronoUnit.YEARS.between(user.getBirthday(), LocalDate.now());
+        String gender = user.getGender().toString();
 
         try {
             webClient.get()
                     .uri(uriBuilder -> uriBuilder
-                            .path("/api/recommend/movie/{userId}/23/W/{p}/{e}/{i}")
-                            .build(userId, movieId, p, e, i))
+                            .path("/api/recommend/movie/{userId}/{age}/{gender}/{p}/{e}/{i}")
+                            .queryParam("movieId", movieId)
+                            .build(userId, age, gender, p, e, i))
                     .retrieve()
                     .toBodilessEntity()
                     .subscribe(
