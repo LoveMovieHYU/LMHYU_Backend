@@ -49,18 +49,7 @@ public class PeopleService {
             return;
         }
 
-        String creditsUrl = UriComponentsBuilder.fromHttpUrl(baseUrl + "/movie/" + tmdbId + "/credits")
-                .queryParam("api_key", apikey)
-                .queryParam("language", "ko-KR")
-                .toUriString();
-
-        CreditsResponse credits;
-        try{
-            credits = restTemplate.getForObject(creditsUrl, CreditsResponse.class);
-        } catch (HttpClientErrorException.NotFound nf) {
-            log.error("not found credits for movie with tmdbId: " + tmdbId);
-            return;
-        }
+        CreditsResponse credits = fetchCreditsOnly(tmdbId);
         if (credits == null) {
             log.error("Failed to fetch credits for movie with tmdbId: " + tmdbId);
             return;
@@ -84,6 +73,36 @@ public class PeopleService {
         }
         log.info("[PeopleBatch] DONE fetch credits. movieId={}, tmdbId={}", movie.getId(), tmdbId);
 
+    }
+
+    public CreditsResponse fetchCreditsOnly(Long tmdbId) {
+        String creditsUrl = UriComponentsBuilder.fromHttpUrl(baseUrl + "/movie/" + tmdbId + "/credits")
+                .queryParam("api_key", apikey)
+                .queryParam("language", "ko-KR")
+                .toUriString();
+
+        try {
+            return restTemplate.getForObject(creditsUrl, CreditsResponse.class);
+        } catch (HttpClientErrorException.NotFound nf) {
+            log.error("not found credits for movie with tmdbId: {}", tmdbId);
+            return null;
+        }
+    }
+
+    public PeopleDetailDTO fetchPersonDetailOnly(int peopleId) {
+        String url = UriComponentsBuilder.fromHttpUrl(baseUrl + "/person/" + peopleId)
+                .queryParam("api_key", apikey)
+                .queryParam("language", "ko-KR")
+                .toUriString();
+
+        try {
+            return restTemplate.getForObject(url, PeopleDetailDTO.class);
+        } catch (HttpClientErrorException.NotFound nf) {
+            return null;
+        } catch (Exception e) {
+            log.warn("person detail fetch failed. personId={}", peopleId, e);
+            return null;
+        }
     }
 
     private void upsertPersonAndLink(Movie movie, CreditsPeople creditsPeople,
