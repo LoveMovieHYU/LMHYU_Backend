@@ -1,8 +1,9 @@
 package Recommend.Movie.Biorhythm.Service;
 
 import Recommend.Movie.Biorhythm.Dto.BiorhythmAnalysisDTO;
-import Recommend.Movie.Biorhythm.Dto.MovieAiRecommendationDto;
+import Recommend.Movie.Biorhythm.Dto.MovieAiRecommendationDTO;
 import Recommend.Movie.Config.Exception.BusinessException;
+import Recommend.Movie.Config.Exception.ErrorCode;
 import Recommend.Movie.User.Domain.Gender;
 import Recommend.Movie.User.Domain.User;
 import Recommend.Movie.User.Repository.UserRepository;
@@ -44,10 +45,11 @@ class RecommendServiceTest {
 
     @BeforeEach
     void setUp(){
-        testUser = new User();
-        testUser.setUserId(1);
-        testUser.setBirthday(LocalDate.of(2002, 8, 24));
-        testUser.setGender(Gender.valueOf("M"));
+        testUser = User.builder()
+                .userId(1)
+                .birthday(LocalDate.of(2002, 8, 24))
+                .gender(Gender.valueOf("M"))
+                .build();
     }
     
     /**
@@ -59,8 +61,8 @@ class RecommendServiceTest {
     void getRecommendation_CacheHit() {
         // given
         int userId = 1;
-        List<MovieAiRecommendationDto> mockCachedList = List.of(
-                MovieAiRecommendationDto.builder().title("캐시된 영화").build()
+        List<MovieAiRecommendationDTO> mockCachedList = List.of(
+                MovieAiRecommendationDTO.builder().title("캐시된 영화").build()
         );
 
         // RedisTemplate의 opsForValue()가 모의 객체를 반환하도록 설정
@@ -68,7 +70,7 @@ class RecommendServiceTest {
         when(valueOperations.get(anyString())).thenReturn(mockCachedList);
 
         // when
-        List<MovieAiRecommendationDto> result = recommendService.getbiorhythmBasedRecommendation(userId);
+        List<MovieAiRecommendationDTO> result = recommendService.getbiorhythmBasedRecommendation(userId);
 
         // then
         assertThat(result).isNotNull();
@@ -79,11 +81,11 @@ class RecommendServiceTest {
 
 
     @Test
-    @DisplayName("유저의 생년월일이 없으면 BusinessException 예외가 발생")
+    @DisplayName("유저의 생년월일이 없으면 BAD_REQUEST 예외가 발생")
     void analyzeBiorhythm_WithoutBirthday_ThrowsException() {
         // given
         int userId = 1;
-        User noBirthdayUser = new User(); // 생년월일 세팅 안 됨
+        User noBirthdayUser = User.builder().userId(userId).build(); // 생년월일 세팅 안 됨
         when(userRepository.findById(userId)).thenReturn(Optional.of(noBirthdayUser));
 
         // when & then
@@ -91,7 +93,40 @@ class RecommendServiceTest {
             recommendService.analyzeBiorhythm(userId);
         });
 
+        assertThat(exception.getCode()).isEqualTo(ErrorCode.BAD_REQUEST);
         assertThat(exception.getMessage()).contains("생년월일 정보가 필요합니다");
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 유저면 USER_NOT_FOUND 예외가 발생")
+    void analyzeBiorhythm_UserNotFound_ThrowsException() {
+        // given
+        int userId = 999;
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        // when & then
+        BusinessException exception = assertThrows(BusinessException.class, () ->
+                recommendService.analyzeBiorhythm(userId));
+
+        assertThat(exception.getCode()).isEqualTo(ErrorCode.USER_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("커스텀 추천 시 성별 정보가 없으면 BAD_REQUEST 예외가 발생")
+    void getCustomRecommend_WithoutGender_ThrowsException() {
+        // given
+        int userId = 1;
+        User noGenderUser = User.builder()
+                .userId(userId)
+                .birthday(LocalDate.of(2002, 8, 24))
+                .build();
+        when(userRepository.findById(userId)).thenReturn(Optional.of(noGenderUser));
+
+        // when & then
+        BusinessException exception = assertThrows(BusinessException.class, () ->
+                recommendService.getCustomRecommend(0.5, 0.1, 0.2, userId));
+
+        assertThat(exception.getCode()).isEqualTo(ErrorCode.BAD_REQUEST);
     }
 
     @Test

@@ -4,7 +4,7 @@ import Recommend.Movie.Biorhythm.Dto.BiorhythmAnalysisDTO;
 import Recommend.Movie.Biorhythm.Service.RecommendService;
 import Recommend.Movie.Config.Exception.BusinessException;
 import Recommend.Movie.Config.Exception.ErrorCode;
-import Recommend.Movie.Biorhythm.Dto.MovieAiRecommendationDto;
+import Recommend.Movie.Biorhythm.Dto.MovieAiRecommendationDTO;
 import Recommend.Movie.User.Dto.UpdateUserRequestDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -55,13 +55,15 @@ public class RecommendController {
             " AI 추천 결과를 반환합니다." +
             "해당 API 조회하면 추천 받은 영화 리스트와, 사용자의 바이오리듬 Redis 에 저장합니다.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "추천 성공", content = @Content(schema = @Schema(implementation = MovieAiRecommendationDto.class))),
+            @ApiResponse(responseCode = "200", description = "추천 성공", content = @Content(schema = @Schema(implementation = MovieAiRecommendationDTO.class))),
             @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터", content = @Content)
     })
     @PostMapping("/first/list")
-    public ResponseEntity<List<MovieAiRecommendationDto>> firstGetBiorhythmRecommendation(@Valid @RequestBody UpdateUserRequestDTO requestDTO,
+    public ResponseEntity<List<MovieAiRecommendationDTO>> firstGetBiorhythmRecommendation(@Valid @RequestBody UpdateUserRequestDTO requestDTO,
                                                                                         Principal principal) {
-        List<MovieAiRecommendationDto> responseDTO =
+        if (principal == null) throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
+
+        List<MovieAiRecommendationDTO> responseDTO =
                 recommendService.savedDetailUserInfoAndRecommend(Integer.parseInt(principal.getName()), requestDTO);
 
         return ResponseEntity.ok(responseDTO);
@@ -74,8 +76,10 @@ public class RecommendController {
     @Operation(summary = "기존 회원 AI 추천 요청", description = "기존 사용자의 정보를 바탕으로 AI 영화 추천을 수행합니다." +
             " (Redis 캐시가 있다면 캐시된 값을 반환합니다.)")
     @GetMapping("/list")
-    public ResponseEntity<List<MovieAiRecommendationDto>> getBiorhythmBasedRecommendation(Principal principal) {
-        List<MovieAiRecommendationDto> responseDTO =
+    public ResponseEntity<List<MovieAiRecommendationDTO>> getBiorhythmBasedRecommendation(Principal principal) {
+        if (principal == null) throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
+
+        List<MovieAiRecommendationDTO> responseDTO =
                 recommendService.getbiorhythmBasedRecommendation(Integer.parseInt(principal.getName()));
 
         return ResponseEntity.ok(responseDTO);
@@ -88,12 +92,14 @@ public class RecommendController {
     @Operation(summary = "바이오리듬 수치 커스텀 기반 영화 추천", description = "사용자가 바이오리듬 수치를 커스텀하여 영화 추천 받음." +
         " Redis 에 따로 저장하지 않습니다. ")
     @GetMapping("/custom/list")
-    public ResponseEntity<List<MovieAiRecommendationDto>> getCustomBiorhythmRecommend(
+    public ResponseEntity<List<MovieAiRecommendationDTO>> getCustomBiorhythmRecommend(
             @RequestParam("p") Double p,
             @RequestParam("e") Double e,
             @RequestParam("i") Double i,
             Principal principal){
-        List<MovieAiRecommendationDto> responseDTO =
+        if (principal == null) throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
+
+        List<MovieAiRecommendationDTO> responseDTO =
                 recommendService.getCustomRecommend(p, e, i, Integer.parseInt(principal.getName()));
         return ResponseEntity.ok(responseDTO);
     }
