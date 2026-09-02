@@ -10,7 +10,6 @@ import java.util.List;
 
 @Entity
 @Getter
-@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -65,6 +64,27 @@ public class User {
     }
     public void removeLikeMovie(LikedMovie likedMovie) {
         this.likedMovieList.remove(likedMovie);
+    }
+
+    /**
+     * 닉네임 변경
+     */
+    public void updateNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    /**
+     * 생년월일 변경
+     */
+    public void updateBirthday(LocalDate birthday) {
+        this.birthday = birthday;
+    }
+
+    /**
+     * 성별 변경
+     */
+    public void updateGender(Gender gender) {
+        this.gender = gender;
     }
 
     @PrePersist

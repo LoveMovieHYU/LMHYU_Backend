@@ -41,11 +41,12 @@ public class UserController {
             @ApiResponse(responseCode = "404", description = "존재하지 않는 유저")
     })
     @GetMapping(value = "/")
-    public UserFindResponseDTO userMeApi(Principal principal) {
+    public ResponseEntity<UserFindResponseDTO> userMeApi(Principal principal) {
         if(principal == null){
             throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
         }
-        return userService.readUser(Integer.parseInt(principal.getName()));
+        UserFindResponseDTO responseDTO = userService.readUser(Integer.parseInt(principal.getName()));
+        return ResponseEntity.ok(responseDTO);
     }
 
     /**
