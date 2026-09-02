@@ -1,5 +1,6 @@
 package Recommend.Movie.Config.Batch;
 
+import Recommend.Movie.Tmdb.Dto.DiscoverPageResult;
 import Recommend.Movie.Tmdb.Dto.WorkItem;
 import Recommend.Movie.Tmdb.Service.TmdbService;
 import lombok.extern.slf4j.Slf4j;
@@ -20,14 +21,16 @@ public class TmdbDiscoverItemReader implements ItemStreamReader<WorkItem> {
     private int currentYear;
     private final int endYear;
     private int currentPage;
+    // TMDB discover API 는 최대 500 페이지까지만 제공
     private final int maxPage = 500;
 
     private final Queue<WorkItem> itemBuffer = new LinkedList<>();
 
-    public TmdbDiscoverItemReader(TmdbService tmdbService, int startYear, boolean includeAdult) {
+    public TmdbDiscoverItemReader(TmdbService tmdbService, int startYear, int endYear, boolean includeAdult) {
         this.tmdbService = tmdbService;
         this.currentYear = startYear;
-        this.endYear = LocalDate.now().getYear();
+        // endYear 가 0 이하이면 현재 연도를 종료 연도로 사용
+        this.endYear = (endYear <= 0) ? LocalDate.now().getYear() : endYear;
         this.currentPage = 1;
         this.includeAdult = includeAdult;
     }
@@ -64,31 +67,52 @@ public class TmdbDiscoverItemReader implements ItemStreamReader<WorkItem> {
             }
 
             if (currentPage > maxPage) {
-                log.debug("Finished Year {}. Moving to next year.", currentYear);
-                currentYear++;
-                currentPage = 1;
-                continue; // 다음 연도 체크를 위해 루프 처음으로
+                log.debug("Reached max page for Year {}. Moving to next year.", currentYear);
+                moveToNextYear();
+                continue;
             }
+
+            int fetchingPage = currentPage;
 
             // API 호출
-            if (currentPage % 10 == 0 || currentPage == 1) {
-                log.debug("Fetching API - Year: {}, Page: {}", currentYear, currentPage);
+            if (fetchingPage % 10 == 0 || fetchingPage == 1) {
+                log.debug("Fetching API - Year: {}, Page: {}", currentYear, fetchingPage);
             }
 
-            List<WorkItem> fetchedItems = tmdbService.fetchDiscoverPage(currentYear, currentPage, includeAdult);
+            DiscoverPageResult result = tmdbService.fetchDiscoverPage(currentYear, fetchingPage, includeAdult);
+            List<WorkItem> fetchedItems = result.items();
 
-            currentPage++;
+            // TMDB total_pages 기준으로 "해당 연도의 마지막 페이지" 여부 판정
+            boolean lastPageOfYear = result.totalPages() <= 0 || fetchingPage >= result.totalPages();
 
             if (fetchedItems != null && !fetchedItems.isEmpty()) {
                 itemBuffer.addAll(fetchedItems);
+                if (lastPageOfYear) {
+                    moveToNextYear();
+                } else {
+                    currentPage++;
+                }
                 break;
+            }
+
+            // 신규 영화가 없어 items 가 비어 있는 경우:
+            // 실제 끝(total_pages 도달)이면 다음 연도로, 단순 필터링 결과 0 이면 같은 연도 다음 페이지로.
+            if (lastPageOfYear) {
+                log.debug("No more pages for Year {} (page {}/{}). Moving to next year.",
+                        currentYear, fetchingPage, result.totalPages());
+                moveToNextYear();
             } else {
-                log.debug("No more data for Year {}. Moving to next year.", currentYear);
-                currentYear++;
-                currentPage = 1;
+                log.debug("Empty (filtered) page for Year {}, page {}. Continue to next page.",
+                        currentYear, fetchingPage);
+                currentPage++;
             }
         }
 
         return itemBuffer.poll();
+    }
+
+    private void moveToNextYear() {
+        currentYear++;
+        currentPage = 1;
     }
 }

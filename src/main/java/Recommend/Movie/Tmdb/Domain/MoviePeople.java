@@ -1,12 +1,16 @@
 package Recommend.Movie.Tmdb.Domain;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "movie_people")
 public class MoviePeople {
     @Id
@@ -20,4 +24,14 @@ public class MoviePeople {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "people_id")
     private People people;
+
+    /**
+     * 영화-인물 연관 생성
+     */
+    public static MoviePeople of(Movie movie, People people) {
+        return MoviePeople.builder()
+                .movie(movie)
+                .people(people)
+                .build();
+    }
 }

@@ -1,6 +1,7 @@
 package Recommend.Movie.Movies.Service;
 
 import Recommend.Movie.Config.Exception.BusinessException;
+import Recommend.Movie.Config.Exception.ErrorCode;
 import Recommend.Movie.LikeMovie.Repository.LikeMovieRepository;
 import Recommend.Movie.Movies.Dto.MovieSearchResponseDTO;
 import Recommend.Movie.Tmdb.Domain.Movie;
@@ -89,7 +90,7 @@ class MovieServiceTest {
         long tmdbId = 100L;
         int userId = 17;
 
-        when(movieRepository.findByTmdbIdWithPeople(tmdbId)).thenReturn(Optional.of(testMovie));
+        when(movieRepository.findByTmdbId(tmdbId)).thenReturn(Optional.of(testMovie));
         when(moviePeopleRepository.findByMovie_Id(testMovie.getId())).thenReturn(List.of());
         when(likeMovieRepository.existsByUser_UserIdAndMovie_TmdbId(userId, tmdbId)).thenReturn(true);
 
@@ -106,7 +107,7 @@ class MovieServiceTest {
         long tmdbId = 100L;
         int userId = 0;
 
-        when(movieRepository.findByTmdbIdWithPeople(tmdbId)).thenReturn(Optional.of(testMovie));
+        when(movieRepository.findByTmdbId(tmdbId)).thenReturn(Optional.of(testMovie));
         when(moviePeopleRepository.findByMovie_Id(testMovie.getId())).thenReturn(List.of());
 
         MovieDetailResponse result = movieService.getMovieDetail(tmdbId, userId);
@@ -121,12 +122,12 @@ class MovieServiceTest {
         long tmdbId = 999L;
         int userId = 1;
 
-        when(movieRepository.findByTmdbIdWithPeople(tmdbId)).thenReturn(Optional.empty());
+        when(movieRepository.findByTmdbId(tmdbId)).thenReturn(Optional.empty());
 
         BusinessException exception = assertThrows(BusinessException.class, () ->
                 movieService.getMovieDetail(tmdbId, userId)
         );
 
-        assertThat(exception).isNotNull();
+        assertThat(exception.getCode()).isEqualTo(ErrorCode.MOVIE_NOT_FOUND);
     }
 }

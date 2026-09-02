@@ -80,13 +80,14 @@ public class TmdbBatch {
     @Bean
     @StepScope
     public TmdbDiscoverItemReader tmdbReader(
-            @Value("#{jobParameters['includeAdult']}") String includeAdult
+            @Value("#{jobParameters['includeAdult']}") String includeAdult,
+            @Value("${tmdb.batch.start-year:2000}") int startYear,
+            @Value("${tmdb.batch.end-year:0}") int endYear
     ){
-        int startYear = 2026;
-
         boolean incAdult = Boolean.parseBoolean(includeAdult);
 
-        return new TmdbDiscoverItemReader(tmdbService, startYear, incAdult);
+        // endYear 가 0 이면 리더에서 현재 연도를 종료 연도로 사용한다.
+        return new TmdbDiscoverItemReader(tmdbService, startYear, endYear, incAdult);
     }
 
     @Bean
@@ -183,7 +184,11 @@ public class TmdbBatch {
     }
 
     private PeopleBatchItem toPeopleBatchItem(Long movieTmdbId, CreditsPeople creditsPeople, String job) {
-        PeopleDetailDTO detail = peopleService.fetchPersonDetailOnly(creditsPeople.getId());
+        // 이미 상세 정보가 적재된 인물이면 외부 상세 조회(HTTP)를 스킵한다.
+        // (name/gender 등 기본 정보는 아래에서 채우고, biography/birthDay 는 upsert 시 기존 값이 유지됨)
+        PeopleDetailDTO detail = peopleService.isPersonDetailStored(creditsPeople.getId())
+                ? null
+                : peopleService.fetchPersonDetailOnly(creditsPeople.getId());
         return PeopleBatchItem.builder()
                 .movieTmdbId(movieTmdbId)
                 .tmdbId((long) creditsPeople.getId())
