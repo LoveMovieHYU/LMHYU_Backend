@@ -18,12 +18,6 @@ public interface MovieRepository extends JpaRepository<Movie, Integer>, JpaSpeci
 
     List<Movie> findAllByTmdbIdIn(List<Long> tmdbIds);
 
-    @Query("""
-    SELECT DISTINCT m FROM Movie m
-    WHERE m.tmdbId = :tmdbId
-    """)
-    Optional<Movie> findByTmdbIdWithPeople(@Param("tmdbId") long tmdbId);
-
     @Query(
             value = "SELECT m.* FROM movie m " +
                     "WHERE MATCH(m.title) AGAINST(:keyword IN BOOLEAN MODE) " +

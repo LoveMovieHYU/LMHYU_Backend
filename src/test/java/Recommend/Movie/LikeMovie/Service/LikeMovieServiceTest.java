@@ -2,7 +2,7 @@ package Recommend.Movie.LikeMovie.Service;
 
 import Recommend.Movie.Config.Exception.BusinessException;
 import Recommend.Movie.Config.Exception.ErrorCode;
-import Recommend.Movie.LikeMovie.Domain.LikeMovieListResponseDTO;
+import Recommend.Movie.LikeMovie.Dto.LikeMovieListResponseDTO;
 import Recommend.Movie.LikeMovie.Domain.LikedMovie;
 import Recommend.Movie.LikeMovie.Dto.MovieReactionRequestDTO;
 import Recommend.Movie.LikeMovie.Repository.LikeMovieRepository;
@@ -50,8 +50,10 @@ class LikeMovieServiceTest {
 
     @BeforeEach
     void setUp() {
-        testUser = new User();
-        testUser.setLikedMovieList(new ArrayList<>());
+        testUser = User.builder()
+                .userId(1)
+                .likedMovieList(new ArrayList<>())
+                .build();
 
         testMovie = Movie.builder()
                 .tmdbId(100L)
@@ -83,19 +85,17 @@ class LikeMovieServiceTest {
         when(userRepository.findByUserId(1)).thenReturn(testUser);
 
         LikedMovie oldLike = mock(LikedMovie.class);
-        when(oldLike.getId()).thenReturn(1);
         when(oldLike.getMovie()).thenReturn(testMovie);
 
         LikedMovie newLike = mock(LikedMovie.class);
-        when(newLike.getId()).thenReturn(2);
         when(newLike.getMovie()).thenReturn(testMovie);
 
-        testUser.getLikedMovieList().add(oldLike);
-        testUser.getLikedMovieList().add(newLike);
+        when(likeMovieRepository.findByUserIdWithMovie(1)).thenReturn(List.of(newLike, oldLike));
 
         List<LikeMovieListResponseDTO> result = likeMovieService.getLikeMovieList(userId);
 
         assertThat(result).hasSize(2);
+        verify(likeMovieRepository, times(1)).findByUserIdWithMovie(1);
     }
 
     @Test

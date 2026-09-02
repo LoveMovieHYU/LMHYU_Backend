@@ -11,12 +11,17 @@ import Recommend.Movie.User.Dto.UpdateUserRequestDTO;
 import Recommend.Movie.User.Dto.UserFindResponseDTO;
 import Recommend.Movie.User.Repository.RefreshRepository;
 import Recommend.Movie.User.Repository.UserRepository;
+import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.Set;
 
 @Service
@@ -61,12 +66,12 @@ public class UserService extends DefaultOAuth2UserService {
         }
 
         if (requestDTO.getBirthday() != null) {
-            user.setBirthday(requestDTO.getBirthday());
+            user.updateBirthday(requestDTO.getBirthday());
             deleteUserBiorhythmCaches(userId);
         }
 
         if (requestDTO.getNickName() != null) {
-            user.setNickname(requestDTO.getNickName());
+            user.updateNickname(requestDTO.getNickName());
         }
 
         userRepository.save(user);
@@ -84,13 +89,13 @@ public class UserService extends DefaultOAuth2UserService {
         }
 
         try {
-            user.setGender(Gender.valueOf(requestDTO.getGender()));
+            user.updateGender(Gender.valueOf(requestDTO.getGender()));
         } catch (IllegalArgumentException e) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "올바르지 않은 성별 값입니다.");
         }
 
-        user.setNickname(requestDTO.getNickName());
-        user.setBirthday(requestDTO.getBirthday());
+        user.updateNickname(requestDTO.getNickName());
+        user.updateBirthday(requestDTO.getBirthday());
 
         userRepository.save(user);
         return "회원가입 완료됐습니다.";
@@ -145,16 +150,33 @@ public class UserService extends DefaultOAuth2UserService {
         String bioPattern = "biorhythm:" + userId + ":*";
         String moviePattern = "recommend:biorhythm:" + userId + ":*";
 
-        Set<String> bioKeys = redisTemplate.keys(bioPattern);
-        Set<String> movieKeys = redisTemplate.keys(moviePattern);
+        Set<String> bioKeys = scanKeys(bioPattern);
+        Set<String> movieKeys = scanKeys(moviePattern);
 
-        if (bioKeys != null && !bioKeys.isEmpty()) {
+        if (!bioKeys.isEmpty()) {
             redisTemplate.delete(bioKeys);
         }
 
-        if (movieKeys != null && !movieKeys.isEmpty()) {
+        if (!movieKeys.isEmpty()) {
             redisTemplate.delete(movieKeys);
         }
+    }
+
+    /**
+     * SCAN 기반으로 패턴에 매칭되는 Redis 키를 조회한다.
+     * keys(pattern) 은 O(N) 블로킹이라 SCAN(non-blocking) 으로 대체한다.
+     */
+    private Set<String> scanKeys(String pattern) {
+        return redisTemplate.execute((RedisConnection connection) -> {
+            Set<String> keys = new HashSet<>();
+            ScanOptions options = ScanOptions.scanOptions().match(pattern).count(100).build();
+            try (Cursor<byte[]> cursor = connection.keyCommands().scan(options)) {
+                while (cursor.hasNext()) {
+                    keys.add(new String(cursor.next(), StandardCharsets.UTF_8));
+                }
+            }
+            return keys;
+        });
     }
 
     private User getUserByUserId(int userId) {

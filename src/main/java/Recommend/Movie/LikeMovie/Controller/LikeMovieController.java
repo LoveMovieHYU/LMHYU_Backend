@@ -2,7 +2,7 @@ package Recommend.Movie.LikeMovie.Controller;
 
 import Recommend.Movie.Config.Exception.BusinessException;
 import Recommend.Movie.Config.Exception.ErrorCode;
-import Recommend.Movie.LikeMovie.Domain.LikeMovieListResponseDTO;
+import Recommend.Movie.LikeMovie.Dto.LikeMovieListResponseDTO;
 import Recommend.Movie.LikeMovie.Service.LikeMovieService;
 import Recommend.Movie.LikeMovie.Dto.MovieReactionRequestDTO;
 import io.swagger.v3.oas.annotations.Operation;

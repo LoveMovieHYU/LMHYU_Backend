@@ -7,7 +7,7 @@ import Recommend.Movie.Config.Exception.BusinessException;
 import Recommend.Movie.Config.Exception.ErrorCode;
 import Recommend.Movie.Biorhythm.Converter.RecommendConverter;
 import Recommend.Movie.Biorhythm.Dto.AiResponseDTO;
-import Recommend.Movie.Biorhythm.Dto.MovieAiRecommendationDto;
+import Recommend.Movie.Biorhythm.Dto.MovieAiRecommendationDTO;
 import Recommend.Movie.Tmdb.Domain.Movie;
 import Recommend.Movie.Tmdb.Domain.MovieGenre;
 import Recommend.Movie.Tmdb.Repository.MovieGenreRepository;
@@ -57,25 +57,25 @@ public class RecommendService {
      * 바이오리듬 수치 Redis 에 저장까지함.
      * */
     @Transactional
-    public List<MovieAiRecommendationDto> savedDetailUserInfoAndRecommend(int userId, UpdateUserRequestDTO requestDTO){
+    public List<MovieAiRecommendationDTO> savedDetailUserInfoAndRecommend(int userId, UpdateUserRequestDTO requestDTO){
 
         userService.updateUserInfo(userId, requestDTO);
 
-        List<MovieAiRecommendationDto> responseDTO = getbiorhythmBasedRecommendation(userId);
+        List<MovieAiRecommendationDTO> responseDTO = getbiorhythmBasedRecommendation(userId);
         return responseDTO;
 
     }
     /**
      * 바이오리듬 커스텀 기반 영화 추천
      * */
-    public List<MovieAiRecommendationDto> getCustomRecommend(Double p, Double e, Double i, int userId){
+    public List<MovieAiRecommendationDTO> getCustomRecommend(Double p, Double e, Double i, int userId){
         AiResponseDTO[] aiResponseArray = null;
-        User user = userRepository.findByUserId(userId);
+        User user = getUser(userId);
         int age = getAge(user);
 
         String gender;
         if (user.getGender() == null) {
-            throw new IllegalArgumentException("유저의 성별 정보가 없습니다.");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "유저의 성별 정보가 없습니다.");
         } else {
             gender = user.getGender().toString();
         }
@@ -94,7 +94,7 @@ public class RecommendService {
             return List.of();
         }
 
-        List<MovieAiRecommendationDto> responseDTO = getMovieAiRecommendationDtos(aiResponseArray);
+        List<MovieAiRecommendationDTO> responseDTO = getMovieAiRecommendationDTOs(aiResponseArray);
 
         return responseDTO;
     }
@@ -104,13 +104,12 @@ public class RecommendService {
      * 1. Redis 캐시 확인 -> 있으면 반환
      * 2. 없으면 AI 요청 -> DB 조회 -> Redis 저장 (영화와 감정)-> 반환
      */
-    public List<MovieAiRecommendationDto> getbiorhythmBasedRecommendation(int userId) {
+    public List<MovieAiRecommendationDTO> getbiorhythmBasedRecommendation(int userId) {
 
         String cacheKey = getMovieListCacheKey(userId);
 
         try {
-            List<MovieAiRecommendationDto> cachedData =
-                    (List<MovieAiRecommendationDto>) redisTemplate.opsForValue().get(cacheKey);
+            List<MovieAiRecommendationDTO> cachedData = readMovieListCache(cacheKey);
 
             if (cachedData != null) {
                 log.info("Cache Hit! Returning data from Redis for user: {}", userId);
@@ -129,7 +128,7 @@ public class RecommendService {
         int age = getAge(user);
         String gender = "W";
         if (user.getGender() == null) {
-            throw new IllegalArgumentException("유저의 성별 정보가 없습니다.");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "유저의 성별 정보가 없습니다.");
         } else {
             gender = user.getGender().toString();
         }
@@ -158,7 +157,7 @@ public class RecommendService {
         }
 
         // Movie ID 추출
-        List<MovieAiRecommendationDto> responseDTO = getMovieAiRecommendationDtos(aiResponseArray);
+        List<MovieAiRecommendationDTO> responseDTO = getMovieAiRecommendationDTOs(aiResponseArray);
 
         // Redis 저장
         try {
@@ -174,7 +173,7 @@ public class RecommendService {
     /**
      * TmdbID 를 활용하여 영화 DB 접근 후 DTO 변환
      * */
-    private List<MovieAiRecommendationDto> getMovieAiRecommendationDtos(AiResponseDTO[] aiResponseArray) {
+    private List<MovieAiRecommendationDTO> getMovieAiRecommendationDTOs(AiResponseDTO[] aiResponseArray) {
         List<Long> tmdbIds = Arrays.stream(aiResponseArray)
                 .map(AiResponseDTO::getMovieId)
                 .collect(Collectors.toList());
@@ -194,14 +193,14 @@ public class RecommendService {
         Map<Long, Movie> movieMap = movies.stream()
                 .collect(Collectors.toMap(Movie::getTmdbId, Function.identity())); // tmdbId를 key 로 가지는 Movie Map 생성
 
-        List<MovieAiRecommendationDto> responseDTO = tmdbIds.stream()
+        List<MovieAiRecommendationDTO> responseDTO = tmdbIds.stream()
                 .map(movieMap::get)
                 .filter(Objects::nonNull)
                 .map(movie -> {
                     List<MovieGenre> genres = genreMap.getOrDefault(movie.getId(), Collections.emptyList());
                     return RecommendConverter.fromEntity(movie, genres);
                 })
-                .sorted(Comparator.comparing(MovieAiRecommendationDto::getPopularity, Comparator.nullsLast(Comparator.reverseOrder())))
+                .sorted(Comparator.comparing(MovieAiRecommendationDTO::getPopularity, Comparator.nullsLast(Comparator.reverseOrder())))
                 .collect(Collectors.toList());
 
         return responseDTO;
@@ -270,8 +269,10 @@ public class RecommendService {
 
         BiorhythmScore biorhythmScore = (BiorhythmScore) redisTemplate.opsForValue().get(key);
 
-        if (biorhythmScore == null) {
+        if (biorhythmScore != null) {
             log.info("Cache Hit! Returning data from Redis for user: {}", userId);
+        } else {
+            log.info("Cache Miss for user: {}", userId);
         }
         return biorhythmScore;
 
@@ -293,6 +294,31 @@ public class RecommendService {
         log.info("Bio Saved in Cache");
 
         return calculatedScore;
+    }
+
+    /**
+     * 영화 추천 리스트 캐시를 안전하게 읽는다.
+     * (RedisConfig 가 GenericJackson2Json 으로 타입 정보를 보존하므로 실제 타입은 유지되지만,
+     *  역직렬화 결과가 예상과 다를 경우 캐시 미스로 처리한다.)
+     */
+    private List<MovieAiRecommendationDTO> readMovieListCache(String cacheKey) {
+        Object cached = redisTemplate.opsForValue().get(cacheKey);
+        if (cached == null) {
+            return null;
+        }
+        if (!(cached instanceof List<?> list)) {
+            log.warn("Unexpected cache type for key={}, type={}", cacheKey, cached.getClass());
+            return null;
+        }
+        if (list.stream().anyMatch(e -> !(e instanceof MovieAiRecommendationDTO))) {
+            log.warn("Unexpected cache element type for key={}", cacheKey);
+            return null;
+        }
+        List<MovieAiRecommendationDTO> result = new ArrayList<>();
+        for (Object e : list) {
+            result.add((MovieAiRecommendationDTO) e);
+        }
+        return result;
     }
 
     /**

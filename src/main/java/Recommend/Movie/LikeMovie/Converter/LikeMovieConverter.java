@@ -1,7 +1,7 @@
 package Recommend.Movie.LikeMovie.Converter;
 
 import Recommend.Movie.LikeMovie.Domain.LikedMovie;
-import Recommend.Movie.LikeMovie.Domain.LikeMovieListResponseDTO;
+import Recommend.Movie.LikeMovie.Dto.LikeMovieListResponseDTO;
 import Recommend.Movie.LikeMovie.Dto.MovieReactionRequestDTO;
 import Recommend.Movie.Tmdb.Domain.Movie;
 import Recommend.Movie.User.Domain.User;

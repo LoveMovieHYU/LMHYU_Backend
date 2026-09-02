@@ -21,7 +21,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -49,7 +48,7 @@ public class TmdbService {
      * 특정 연도(year)와 페이지(page)에 해당하는 데이터만 API로 가져와서 반환
      * ItemReader에서 이 메서드를 반복 호출하게 됩니다.
      */
-    public List<WorkItem> fetchDiscoverPage(int year, int page, boolean includeAdult) {
+    public DiscoverPageResult fetchDiscoverPage(int year, int page, boolean includeAdult) {
         String url = UriComponentsBuilder.fromHttpUrl(baseUrl + "/discover/movie")
                 .queryParam("api_key", apikey)
                 .queryParam("language", "ko-KR")
@@ -66,15 +65,16 @@ public class TmdbService {
             DiscoverResponse body = resp.getBody();
 
             if (body == null || body.results == null || body.results.isEmpty()) {
-                return Collections.emptyList(); // 데이터 없음
+                return DiscoverPageResult.empty(); // 데이터 없음
             }
 
+            int totalPages = body.total_pages == null ? 0 : body.total_pages;
 
             List<WorkItem> items = new ArrayList<>();
             for (DiscoverMovieSummary summary : body.results) {
                 if (summary == null) continue;
 
-                // 이미 DB에 있는지 확인
+                // 이미 DB에 있는지 확인 (필터링되어 items 가 비어도 페이지 자체는 끝이 아님)
                 if (movieRepository.findByTmdbId((long) summary.getId()).isPresent()) {
                     log.debug("Already Data : {}", summary.getTitle());
                     continue;
@@ -84,7 +84,7 @@ public class TmdbService {
 
             sleepSilently(Duration.ofMillis(100));
 
-            return items;
+            return new DiscoverPageResult(items, totalPages);
 
         } catch (HttpClientErrorException e) {
             log.error("TMDB API Error for year={}, page={}: {}", year, page, e.getMessage());
@@ -92,10 +92,10 @@ public class TmdbService {
                 log.warn("Rate limit exceeded. Sleeping for 2 seconds...");
                 sleepSilently(Duration.ofSeconds(2));
             }
-            return Collections.emptyList();
+            return DiscoverPageResult.empty();
         } catch (Exception e) {
             log.error("Unexpected error for year={}, page={}", year, page, e);
-            return Collections.emptyList();
+            return DiscoverPageResult.empty();
         }
     }
     /**

@@ -35,7 +35,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         log.warn("잘못된 경로로 접근 시도됨: {}", ex.getMessage());
 
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Not Found");
+        return toResponse(ErrorCode.NOT_FOUND, "요청하신 리소스를 찾을 수 없습니다.", List.of());
     }
     /**
      * 비즈니스 예외
@@ -60,7 +60,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @Override
     protected ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request)
     {
-        log.error("⚠️ Internal server error occurred: {}", ex.getMessage(), ex);
+        log.error("Internal server error occurred: {}", ex.getMessage(), ex);
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ErrorDTO.builder()

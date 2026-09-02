@@ -105,65 +105,63 @@ public class PeopleService {
         }
     }
 
+    /**
+     * 인물 상세 정보가 이미 DB 에 적재되어 있는지 여부.
+     * 배치에서 불필요한 외부 상세 조회를 스킵하기 위한 사전 확인용.
+     */
+    public boolean isPersonDetailStored(int tmdbPeopleId) {
+        People people = peopleRepository.findByTmdbId(tmdbPeopleId);
+        return people != null && !isNullOrBlank(people.getBiography());
+    }
+
     private void upsertPersonAndLink(Movie movie, CreditsPeople creditsPeople,
                                      String jobKor, boolean fetchDetail) {
         if(creditsPeople == null) return;
         int tmdbPeopleId = creditsPeople.getId();
         People people = peopleRepository.findByTmdbId(tmdbPeopleId);
         if (people == null) {
-            people = new People();
-            people.setTmdbId((long) tmdbPeopleId);
-            people.markNew();
+            people = People.createNew(tmdbPeopleId);
         }
 
-        if(creditsPeople.getName() != null){
-            people.setName(creditsPeople.getName());
-        }
-        if(creditsPeople.getGender() != null){
-            people.setGender(creditsPeople.getGender());
-        }
-        if(creditsPeople.getProfilePath() != null){
-            people.setProfileImagePath(creditsPeople.getProfilePath());
-        }
-
-        if(people.getJob() == null){
-           people.setJob(Job.valueOf(jobKor));
-        }
+        people.updateBasicInfo(creditsPeople.getName(), creditsPeople.getGender(), creditsPeople.getProfilePath());
+        people.assignJobIfAbsent(Job.valueOf(jobKor));
 
         if (fetchDetail && (isNullOrBlank(people.getBiography()) || people.getBirthDay() == null)) {
             fillPersonDetail(tmdbPeopleId, people);
         }
         peopleRepository.save(people);
         log.debug("Updated person: " + people.getName() + " (tmdbId: " + tmdbPeopleId + ")");
-        if (!moviePeopleRepository.existsByMovie_IdAndPeople_Id(movie.getId(), tmdbPeopleId)) {
-            MoviePeople moviePeople = new MoviePeople();
-            moviePeople.setMovie(movie);
-            moviePeople.setPeople(people);
-            moviePeopleRepository.save(moviePeople);
+        // 저장 후의 내부 PK(people.getId()) 로 중복 판정해야 올바르게 동작한다.
+        if (!moviePeopleRepository.existsByMovie_IdAndPeople_Id(movie.getId(), people.getId())) {
+            moviePeopleRepository.save(MoviePeople.of(movie, people));
         }
         log.debug("Linked person " + people.getName() + " to movie " + movie.getTitle());
     }
 
+    /**
+     * TMDB person 상세를 조회해 People 엔티티에 반영한다.
+     * (상세 조회 로직은 {@link #fetchPersonDetailOnly(int)} 로 일원화)
+     */
     private void fillPersonDetail(int peopleId, People people){
-        String url = UriComponentsBuilder.fromHttpUrl(baseUrl + "/person/" + peopleId)
-                .queryParam("api_key", apikey)
-                .queryParam("language", "ko-KR")
-                .toUriString();
+        PeopleDetailDTO detail = fetchPersonDetailOnly(peopleId);
+        if (detail == null) {
+            return;
+        }
+        people.updateDetail(detail.getBiography(), parseBirthDay(detail.getBirthday()), detail.getProfile_path());
+    }
+
+    private LocalDate parseBirthDay(String birthday) {
+        if (isNullOrBlank(birthday)) {
+            return null;
+        }
         try {
-            PeopleDetailDTO detail = restTemplate.getForObject(url, PeopleDetailDTO.class);
-            if (detail != null) {
-                if (!isNullOrBlank(detail.getBiography())) people.setBiography(detail.getBiography());
-                if (!isNullOrBlank(detail.getBirthday())) people.setBirthDay(LocalDate.parse(detail.getBirthday()));
-                if (!isNullOrBlank(detail.getProfile_path()) && isNullOrBlank(people.getProfileImagePath())) {
-                    people.setProfileImagePath(detail.getProfile_path());
-                }
-            }
-        } catch (HttpClientErrorException.NotFound nf) {
-            // ignore
+            return LocalDate.parse(birthday);
         } catch (Exception e) {
-            log.warn("person 상세 조회 실패 personId={}", peopleId, e);
+            log.debug("Invalid person birthday. birthday={}", birthday);
+            return null;
         }
     }
+
     private boolean isNullOrBlank(String s) {
         return s == null || s.isBlank();
     }
