@@ -1,0 +1,51 @@
+name: Docker Build & Push
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 내 코드 내려받기
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # [추가됨] 2. Java 환경 설정 (JDK 17)
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # [추가됨] 3. gradlew 실행 권한 부여
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # [추가됨] 4. Gradle로 JAR 파일 빌드 (이게 있어야 build/libs 폴더가 생김!)
+      - name: Build with Gradle
+        run: ./gradlew bootJar
+
+      # 5. Docker 로그인
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # 6. Docker Buildx 설정
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 7. 이미지 빌드 및 업로드
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: leehyunwoo02/hymv-server:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
