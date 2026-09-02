@@ -1,5 +1,7 @@
 package Recommend.Movie.User.Service;
 
+import Recommend.Movie.Config.Exception.BusinessException;
+import Recommend.Movie.Config.Exception.ErrorCode;
 import Recommend.Movie.User.Dto.JWTResponseDTO;
 import Recommend.Movie.User.Domain.RefreshEntity;
 import Recommend.Movie.User.Repository.RefreshRepository;
@@ -30,11 +32,11 @@ public class JwtService {
         // 1. Refresh 토큰 자체의 유효성 검증
         Boolean isValid = JWTUtil.isValid(refreshToken, false);
         if (!isValid) {
-            throw new RuntimeException("유효하지 않은 refreshToken입니다.");
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "유효하지 않은 refreshToken입니다.");
         }
 
         if (!existsRefresh(refreshToken)) {
-            throw new RuntimeException("DB에 존재하지 않는 refreshToken입니다.");
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "DB에 존재하지 않는 refreshToken입니다.");
         }
 
         String name = JWTUtil.getUsername(refreshToken);
