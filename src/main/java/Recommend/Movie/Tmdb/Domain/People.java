@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.function.Supplier;
 
 @Entity
 @Getter
@@ -74,10 +75,12 @@ public class People {
 
     /**
      * 직업 정보가 없을 때만 설정한다.
+     * job 값은 Supplier 로 받아 이미 직업이 있으면 평가하지 않는다(지연 평가).
+     * 이렇게 하면 통제 밖 값(Job.valueOf 실패 등)이 유입되어도 불필요한 예외가 발생하지 않는다.
      */
-    public void assignJobIfAbsent(Job job) {
+    public void assignJobIfAbsent(Supplier<Job> jobSupplier) {
         if (this.job == null) {
-            this.job = job;
+            this.job = jobSupplier.get();
         }
     }
 

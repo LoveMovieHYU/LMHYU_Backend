@@ -108,10 +108,16 @@ public class PeopleService {
     /**
      * 인물 상세 정보가 이미 DB 에 적재되어 있는지 여부.
      * 배치에서 불필요한 외부 상세 조회를 스킵하기 위한 사전 확인용.
+     *
+     * biography 만으로 판정하면 biography 는 있으나 birthDay 가 비어 있는 인물의 생일이
+     * 영원히 백필되지 않으므로, 상세 조회로 채워지는 핵심 필드(biography + birthDay)가
+     * 모두 채워졌을 때만 "적재됨" 으로 본다. (upsertPersonAndLink 의 재조회 조건과 일치)
      */
     public boolean isPersonDetailStored(int tmdbPeopleId) {
         People people = peopleRepository.findByTmdbId(tmdbPeopleId);
-        return people != null && !isNullOrBlank(people.getBiography());
+        return people != null
+                && !isNullOrBlank(people.getBiography())
+                && people.getBirthDay() != null;
     }
 
     private void upsertPersonAndLink(Movie movie, CreditsPeople creditsPeople,
@@ -124,7 +130,8 @@ public class PeopleService {
         }
 
         people.updateBasicInfo(creditsPeople.getName(), creditsPeople.getGender(), creditsPeople.getProfilePath());
-        people.assignJobIfAbsent(Job.valueOf(jobKor));
+        // 이미 직업이 있으면 Job.valueOf 를 평가하지 않도록 Supplier 로 지연 전달한다.
+        people.assignJobIfAbsent(() -> Job.valueOf(jobKor));
 
         if (fetchDetail && (isNullOrBlank(people.getBiography()) || people.getBirthDay() == null)) {
             fillPersonDetail(tmdbPeopleId, people);

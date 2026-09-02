@@ -39,7 +39,9 @@ public class RecommendController {
             "생년월일은 바이오리듬 그래프를 그리는데 사용합니다.")
     @GetMapping("/biorhythm/check")
     public ResponseEntity<BiorhythmAnalysisDTO> analyzeBiorhythm(Principal principal) {
-        if (principal == null) throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
+        if (principal == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
 
         BiorhythmAnalysisDTO result = recommendService.analyzeBiorhythm(Integer.parseInt(principal.getName()));
         return ResponseEntity.ok(result);
@@ -61,7 +63,9 @@ public class RecommendController {
     @PostMapping("/first/list")
     public ResponseEntity<List<MovieAiRecommendationDTO>> firstGetBiorhythmRecommendation(@Valid @RequestBody UpdateUserRequestDTO requestDTO,
                                                                                         Principal principal) {
-        if (principal == null) throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
+        if (principal == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
 
         List<MovieAiRecommendationDTO> responseDTO =
                 recommendService.savedDetailUserInfoAndRecommend(Integer.parseInt(principal.getName()), requestDTO);
@@ -77,7 +81,9 @@ public class RecommendController {
             " (Redis 캐시가 있다면 캐시된 값을 반환합니다.)")
     @GetMapping("/list")
     public ResponseEntity<List<MovieAiRecommendationDTO>> getBiorhythmBasedRecommendation(Principal principal) {
-        if (principal == null) throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
+        if (principal == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
 
         List<MovieAiRecommendationDTO> responseDTO =
                 recommendService.getbiorhythmBasedRecommendation(Integer.parseInt(principal.getName()));
@@ -97,7 +103,9 @@ public class RecommendController {
             @RequestParam("e") Double e,
             @RequestParam("i") Double i,
             Principal principal){
-        if (principal == null) throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
+        if (principal == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
 
         List<MovieAiRecommendationDTO> responseDTO =
                 recommendService.getCustomRecommend(p, e, i, Integer.parseInt(principal.getName()));

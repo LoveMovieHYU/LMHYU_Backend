@@ -11,8 +11,8 @@ import Recommend.Movie.Tmdb.Domain.Movie;
 import Recommend.Movie.Tmdb.Repository.MovieRepository;
 import Recommend.Movie.User.Domain.User;
 import Recommend.Movie.User.Repository.UserRepository;
-import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -37,7 +37,7 @@ public class LikeMovieService {
     @Transactional
     public String saveMovieReaction(long tmdbId, MovieReactionRequestDTO requestDTO,
                                     String userId){
-        User user = getUser(userId);
+        User user = getUser(parseUserId(userId));
         Movie movie = movieRepository.findByTmdbId(tmdbId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MOVIE_NOT_FOUND, "해당 영화가 존재하지 않습니다."));
 
@@ -52,11 +52,14 @@ public class LikeMovieService {
     /**
      * 최근 좋아요 누른 영화 조회
      * */
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    @Transactional(readOnly = true)
     public List<LikeMovieListResponseDTO> getLikeMovieList(String userId){
-        getUser(userId); // 유저 존재 검증 (없으면 USER_NOT_FOUND)
+        int id = parseUserId(userId);
+        getUser(id); // 유저 존재 검증 (없으면 USER_NOT_FOUND)
 
-        return likeMovieRepository.findByUserIdWithMovie(Integer.parseInt(userId)).stream()
+        // ReactionType 은 현재 LIKE 만 정의되어 있어 liked_movie 에는 LIKE 만 저장된다.
+        // (DISLIKE 등이 추가되면 여기서 reactionType 필터를 함께 도입해야 한다.)
+        return likeMovieRepository.findByUserIdWithMovie(id).stream()
                 .map(likedMovie -> LikeMovieConverter.toDTO(likedMovie.getMovie()))
                 .collect(Collectors.toList());
     }
@@ -66,7 +69,7 @@ public class LikeMovieService {
      * */
     @Transactional
     public String deleteLikeMovie(long tmdbId, String userId){
-        User user = getUser(userId);
+        User user = getUser(parseUserId(userId));
         Movie movie = movieRepository.findByTmdbId(tmdbId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MOVIE_NOT_FOUND, "해당 영화가 존재하지 않습니다."));
 
@@ -79,12 +82,24 @@ public class LikeMovieService {
 
     }
 
-    private User getUser(String userId) {
-        User user = userRepository.findByUserId(Integer.parseInt(userId));
+    private User getUser(int userId) {
+        User user = userRepository.findByUserId(userId);
         if(user == null){
             throw new BusinessException(ErrorCode.USER_NOT_FOUND, "유저를 찾을 수 없습니다.");
         }
         return user;
+    }
+
+    /**
+     * Principal 에서 넘어온 userId 문자열을 int 로 변환한다.
+     * 파싱 실패는 500(NumberFormatException) 대신 BusinessException 으로 규약에 맞게 변환한다.
+     */
+    private int parseUserId(String userId) {
+        try {
+            return Integer.parseInt(userId);
+        } catch (NumberFormatException e) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "유효하지 않은 사용자 식별자입니다.");
+        }
     }
 
 }
