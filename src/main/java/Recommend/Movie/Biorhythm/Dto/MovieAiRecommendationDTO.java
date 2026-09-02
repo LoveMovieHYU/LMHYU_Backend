@@ -11,7 +11,7 @@ import java.util.Set;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MovieAiRecommendationDto {
+public class MovieAiRecommendationDTO {
     private Long id;
     private String title;
     private String posterPath; // 포스터 사진
