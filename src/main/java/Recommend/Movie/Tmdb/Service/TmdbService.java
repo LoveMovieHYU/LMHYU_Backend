@@ -92,10 +92,12 @@ public class TmdbService {
                 log.warn("Rate limit exceeded. Sleeping for 2 seconds...");
                 sleepSilently(Duration.ofSeconds(2));
             }
-            return DiscoverPageResult.empty();
+            // 정상 종료(끝 페이지)가 아니라 일시적 오류이므로 실패 신호를 반환한다.
+            // 리더는 이 신호를 받아 연도를 넘기지 않고 같은 페이지를 재시도한다.
+            return DiscoverPageResult.failure();
         } catch (Exception e) {
             log.error("Unexpected error for year={}, page={}", year, page, e);
-            return DiscoverPageResult.empty();
+            return DiscoverPageResult.failure();
         }
     }
     /**

@@ -20,6 +20,8 @@ public interface LikeMovieRepository extends JpaRepository<LikedMovie,Integer> {
     boolean existsByUser_UserIdAndMovie_TmdbId(int userId, long tmdbId);
 
     // Movie 를 함께 fetch 하여 좋아요 목록 조회 시 N+1 을 제거한다. (최신순 정렬)
+    // ReactionType 은 현재 LIKE 만 존재하여 liked_movie 에는 LIKE 만 저장되므로 reactionType 필터가 불필요하다.
+    // (DISLIKE 등이 추가되면 WHERE 절에 reactionType 조건을 함께 추가해야 한다.)
     @Query("SELECT lm FROM liked_movie lm JOIN FETCH lm.movie WHERE lm.user.userId = :userId ORDER BY lm.id DESC")
     List<LikedMovie> findByUserIdWithMovie(@Param("userId") int userId);
 

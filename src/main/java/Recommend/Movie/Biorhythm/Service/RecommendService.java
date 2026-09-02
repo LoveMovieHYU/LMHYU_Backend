@@ -126,7 +126,7 @@ public class RecommendService {
         log.info("Saved Bio info in Chach ");
 
         int age = getAge(user);
-        String gender = "W";
+        String gender;
         if (user.getGender() == null) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "유저의 성별 정보가 없습니다.");
         } else {
