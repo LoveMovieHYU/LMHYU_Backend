@@ -61,7 +61,7 @@ public class MovieService {
      * 영화 상세보기
      * */
     public MovieDetailResponse getMovieDetail(long tmdbId, int userId) {
-        Movie movie = movieRepository.findByTmdbIdWithPeople(tmdbId)
+        Movie movie = movieRepository.findByTmdbId(tmdbId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MOVIE_NOT_FOUND,"영화를 찾을 수 없습니다."));
 
         boolean isLiked = false;
