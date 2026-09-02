@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 
@@ -17,6 +18,10 @@ public interface LikeMovieRepository extends JpaRepository<LikedMovie,Integer> {
     Optional<LikedMovie> findByUserAndMovie(User user, Movie movie);
 
     boolean existsByUser_UserIdAndMovie_TmdbId(int userId, long tmdbId);
+
+    // Movie 를 함께 fetch 하여 좋아요 목록 조회 시 N+1 을 제거한다. (최신순 정렬)
+    @Query("SELECT lm FROM liked_movie lm JOIN FETCH lm.movie WHERE lm.user.userId = :userId ORDER BY lm.id DESC")
+    List<LikedMovie> findByUserIdWithMovie(@Param("userId") int userId);
 
     @Modifying(clearAutomatically = true)
     @Query(value = "DELETE FROM liked_movie WHERE user_id = :userId", nativeQuery = true)

@@ -4,7 +4,7 @@ import Recommend.Movie.Config.Exception.BusinessException;
 import Recommend.Movie.Config.Exception.ErrorCode;
 import Recommend.Movie.LikeMovie.Converter.LikeMovieConverter;
 import Recommend.Movie.LikeMovie.Domain.LikedMovie;
-import Recommend.Movie.LikeMovie.Domain.LikeMovieListResponseDTO;
+import Recommend.Movie.LikeMovie.Dto.LikeMovieListResponseDTO;
 import Recommend.Movie.LikeMovie.Repository.LikeMovieRepository;
 import Recommend.Movie.LikeMovie.Dto.MovieReactionRequestDTO;
 import Recommend.Movie.Tmdb.Domain.Movie;
@@ -14,7 +14,6 @@ import Recommend.Movie.User.Repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -53,12 +52,12 @@ public class LikeMovieService {
     /**
      * 최근 좋아요 누른 영화 조회
      * */
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public List<LikeMovieListResponseDTO> getLikeMovieList(String userId){
-        User user = getUser(userId);
+        getUser(userId); // 유저 존재 검증 (없으면 USER_NOT_FOUND)
 
-        return user.getLikedMovieList().stream()
-                .sorted(Comparator.comparing(LikedMovie::getId).reversed())
-                .map(event -> LikeMovieConverter.toDTO(event.getMovie()))
+        return likeMovieRepository.findByUserIdWithMovie(Integer.parseInt(userId)).stream()
+                .map(likedMovie -> LikeMovieConverter.toDTO(likedMovie.getMovie()))
                 .collect(Collectors.toList());
     }
 

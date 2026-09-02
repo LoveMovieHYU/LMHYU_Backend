@@ -1,4 +1,4 @@
-package Recommend.Movie.LikeMovie.Domain;
+package Recommend.Movie.LikeMovie.Dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
