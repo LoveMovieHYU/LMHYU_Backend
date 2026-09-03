@@ -6,6 +6,7 @@ build/
 !**/src/test/**/build/
 **/src/main/resources/env.properties
 docker-compose.yml
+/docs
 /meta_db_data
 
 ### STS ###
