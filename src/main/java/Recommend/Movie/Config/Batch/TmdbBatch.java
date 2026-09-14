@@ -72,8 +72,14 @@ public class TmdbBatch {
                 .retry(java.net.SocketTimeoutException.class)
                 .retryLimit(3)
                 .backOffPolicy(new FixedBackOffPolicy() {{ setBackOffPeriod(2000L); }})
-                .skip(Exception.class)
-                .skipLimit(1000)
+                // skip 대상을 실제로 건너뛰어도 되는 예외로 한정한다.
+                // 개별 영화의 TMDB 4xx 응답(HttpClientErrorException)과
+                // 파싱/데이터 오류(IllegalArgumentException)만 건너뛰고,
+                // 그 외 SQL 오류·버그 등은 조용히 삼키지 않고 Step 을 실패시킨다.
+                .skip(org.springframework.web.client.HttpClientErrorException.class)
+                .skip(IllegalArgumentException.class)
+                .skipLimit(100)
+                .listener(new TmdbSkipListener())
                 .build();
     }
 
@@ -536,5 +542,29 @@ public class TmdbBatch {
     }
 
     private record MoviePeopleBatchItem(Long movieTmdbId, Long peopleTmdbId) {
+    }
+
+    /**
+     * skip 발생을 관측 가능하게 남기는 리스너.
+     * 어느 단계에서 어떤 이유로 몇 건이 스킵됐는지 log.warn 으로 기록한다.
+     */
+    @Slf4j
+    static class TmdbSkipListener implements org.springframework.batch.core.SkipListener<WorkItem, MovieBatchItem> {
+        @Override
+        public void onSkipInRead(Throwable t) {
+            log.warn("[MovieBatch] Skip in read. reason={}", t.getMessage(), t);
+        }
+
+        @Override
+        public void onSkipInProcess(WorkItem item, Throwable t) {
+            log.warn("[MovieBatch] Skip in process. movieId={}, reason={}",
+                    item == null ? null : item.getMovieId(), t.getMessage(), t);
+        }
+
+        @Override
+        public void onSkipInWrite(MovieBatchItem item, Throwable t) {
+            log.warn("[MovieBatch] Skip in write. tmdbId={}, reason={}",
+                    item == null ? null : item.getTmdbId(), t.getMessage(), t);
+        }
     }
 }

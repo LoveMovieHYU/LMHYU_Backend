@@ -57,7 +57,8 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                 .queryParam("refreshToken", refreshToken)
                 .build().toUriString();
 
-        log.info("Redirecting to: {}", targetUrl);
+        // 토큰이 포함된 전체 URL 은 로그로 남기지 않는다. (토큰 유출 방지)
+        log.info("OAuth2 로그인 성공: userId={} 로 리다이렉트합니다.", user.getUserId());
 
         // 부모 클래스의 메서드를 사용하여 리다이렉트 수행
         getRedirectStrategy().sendRedirect(request, response, targetUrl);

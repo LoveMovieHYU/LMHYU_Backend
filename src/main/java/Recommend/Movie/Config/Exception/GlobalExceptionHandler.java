@@ -54,6 +54,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
+     * 매칭되는 핸들러가 없는 일반 예외(RuntimeException 등) catch-all.
+     * ResponseEntityExceptionHandler 가 처리하는 예외(BindException 등)와
+     * BusinessException 은 더 구체적인 핸들러가 우선하므로 여기로 오지 않는다.
+     * 메시지는 클라이언트에 노출하지 않고 서버 로그에만 원인을 남긴다.
+     */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Object> handleUnexpected(Exception e) {
+        log.error("처리되지 않은 예외 발생", e);
+        return toResponse(ErrorCode.INTERNAL_SERVER_ERROR, "서버 에러가 발생했습니다.", List.of());
+    }
+
+    /**
      * 최종 Fallback(핸들러가 없는 알 수 없는 예외)
      * 메시지는 클라이언트 노출 X
      */

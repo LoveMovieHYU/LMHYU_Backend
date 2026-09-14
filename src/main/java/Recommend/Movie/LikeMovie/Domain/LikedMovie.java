@@ -12,6 +12,9 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity(name = "liked_movie")
+@Table(uniqueConstraints = @UniqueConstraint(
+        name = "uk_liked_movie_user_movie",
+        columnNames = {"user_id", "tmdb_id"}))
 @Builder
 @NoArgsConstructor
 @Getter

@@ -1,11 +1,7 @@
 package Recommend.Movie.Tmdb.Service;
 
-import Recommend.Movie.Tmdb.Domain.Job;
-import Recommend.Movie.Tmdb.Domain.Movie;
 import Recommend.Movie.Tmdb.Domain.People;
-import Recommend.Movie.Tmdb.Dto.CreditsPeople;
 import Recommend.Movie.Tmdb.Dto.CreditsResponse;
-import Recommend.Movie.Tmdb.Repository.MoviePeopleRepository;
 import Recommend.Movie.Tmdb.Repository.PeopleRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,13 +9,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.List;
+import java.time.LocalDate;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -34,46 +33,69 @@ class PeopleServiceTest {
     private RestTemplate restTemplate;
     @Mock
     private PeopleRepository peopleRepository;
-    @Mock
-    private MoviePeopleRepository moviePeopleRepository;
 
     @Test
-    @DisplayName("영화-인물 중복 판정은 TMDB id 가 아니라 저장된 People 의 내부 PK(people.getId()) 로 수행한다")
-    void upsertPersonAndLink_usesPeopleInternalPkForDuplicateCheck() {
-        // given
-        Movie movie = Movie.builder().id(10).tmdbId(671L).title("테스트 영화").build();
+    @DisplayName("크레딧 조회 시 404(NotFound)면 null 을 반환한다")
+    void fetchCreditsOnly_notFoundReturnsNull() {
+        when(restTemplate.getForObject(anyString(), eq(CreditsResponse.class)))
+                .thenThrow(HttpClientErrorException.create(
+                        HttpStatus.NOT_FOUND, "Not Found", HttpHeaders.EMPTY, null, null));
 
-        int tmdbPeopleId = 777;
-        int peopleInternalPk = 42;
+        CreditsResponse result = peopleService.fetchCreditsOnly(671L);
 
-        CreditsPeople cast = new CreditsPeople();
-        cast.setId(tmdbPeopleId);
-        cast.setName("배우A");
-        cast.setGender(2);
-        cast.setOrder(0);
+        assertThat(result).isNull();
+        verify(restTemplate, times(1)).getForObject(anyString(), eq(CreditsResponse.class));
+    }
 
+    @Test
+    @DisplayName("크레딧 조회 시 429(TooManyRequests)면 대기 후 한 번 더 재시도하고 성공값을 반환한다")
+    void fetchCreditsOnly_tooManyRequestsRetriesAndSucceeds() {
         CreditsResponse credits = new CreditsResponse();
-        credits.setCast(List.of(cast));
+        when(restTemplate.getForObject(anyString(), eq(CreditsResponse.class)))
+                .thenThrow(HttpClientErrorException.create(
+                        HttpStatus.TOO_MANY_REQUESTS, "Too Many Requests", HttpHeaders.EMPTY, null, null))
+                .thenReturn(credits);
 
-        // 이미 상세정보(biography)가 있는 기존 인물 → 내부 PK 42
-        People existing = People.builder()
-                .id(peopleInternalPk)
-                .tmdbId((long) tmdbPeopleId)
-                .job(Job.ACTOR)
+        CreditsResponse result = peopleService.fetchCreditsOnly(671L);
+
+        assertThat(result).isSameAs(credits);
+        verify(restTemplate, times(2)).getForObject(anyString(), eq(CreditsResponse.class));
+    }
+
+    @Test
+    @DisplayName("크레딧 조회 시 예상치 못한 오류(5xx/네트워크 등)면 영화 유실 방지를 위해 null 을 반환한다")
+    void fetchCreditsOnly_unexpectedErrorReturnsNull() {
+        when(restTemplate.getForObject(anyString(), eq(CreditsResponse.class)))
+                .thenThrow(new RuntimeException("connection reset"));
+
+        CreditsResponse result = peopleService.fetchCreditsOnly(671L);
+
+        assertThat(result).isNull();
+        verify(restTemplate, times(1)).getForObject(anyString(), eq(CreditsResponse.class));
+    }
+
+    @Test
+    @DisplayName("biography 와 birthDay 가 모두 채워진 인물만 적재됨으로 판정한다")
+    void isPersonDetailStored_requiresBiographyAndBirthDay() {
+        People stored = People.builder()
+                .tmdbId(777L)
+                .biography("소개")
+                .birthDay(LocalDate.of(1990, 1, 1))
+                .build();
+        when(peopleRepository.findByTmdbId(777)).thenReturn(stored);
+
+        assertThat(peopleService.isPersonDetailStored(777)).isTrue();
+    }
+
+    @Test
+    @DisplayName("birthDay 가 비어 있으면 아직 적재되지 않은 것으로 판정한다")
+    void isPersonDetailStored_missingBirthDayIsNotStored() {
+        People stored = People.builder()
+                .tmdbId(777L)
                 .biography("소개")
                 .build();
+        when(peopleRepository.findByTmdbId(777)).thenReturn(stored);
 
-        when(restTemplate.getForObject(anyString(), eq(CreditsResponse.class))).thenReturn(credits);
-        when(peopleRepository.findByTmdbId(tmdbPeopleId)).thenReturn(existing);
-        when(moviePeopleRepository.existsByMovie_IdAndPeople_Id(movie.getId(), peopleInternalPk)).thenReturn(true);
-
-        // when (fetchPersonDetail=false 로 외부 상세 조회는 스킵)
-        peopleService.fetchAndSaveCreditsByMovieId(movie, false);
-
-        // then : 내부 PK(42) 로 중복 판정, TMDB id(777) 로는 호출되지 않아야 함
-        verify(moviePeopleRepository, times(1)).existsByMovie_IdAndPeople_Id(movie.getId(), peopleInternalPk);
-        verify(moviePeopleRepository, never()).existsByMovie_IdAndPeople_Id(movie.getId(), tmdbPeopleId);
-        // 이미 연결되어 있으므로 새 링크 저장은 발생하지 않음
-        verify(moviePeopleRepository, never()).save(org.mockito.ArgumentMatchers.any());
+        assertThat(peopleService.isPersonDetailStored(777)).isFalse();
     }
 }

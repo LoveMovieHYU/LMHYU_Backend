@@ -3,6 +3,7 @@ package Recommend.Movie.User.Service;
 import Recommend.Movie.Config.Exception.BusinessException;
 import Recommend.Movie.Config.Exception.ErrorCode;
 import Recommend.Movie.LikeMovie.Repository.LikeMovieRepository;
+import Recommend.Movie.User.Converter.UserConverter;
 import Recommend.Movie.User.Domain.Gender;
 import Recommend.Movie.User.Domain.User;
 import Recommend.Movie.User.Dto.CheckUserResponseDTO;
@@ -53,7 +54,7 @@ public class UserService extends DefaultOAuth2UserService {
     @Transactional(readOnly = true)
     public UserFindResponseDTO readUser(int userId) {
         User user = getUserByUserId(userId);
-        return new UserFindResponseDTO(user.getName(), user.getEmail(), user.getNickname());
+        return UserConverter.toDTO(user);
     }
 
     @Transactional
@@ -61,16 +62,17 @@ public class UserService extends DefaultOAuth2UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "유저가 없습니다."));
 
-        if (user.getNickname() != null && user.getNickname().equals(requestDTO.getNickName())) {
-            throw new BusinessException(ErrorCode.SAME_NICKNAME, "닉네임이 중복됐습니다.");
-        }
-
         if (requestDTO.getBirthday() != null) {
             user.updateBirthday(requestDTO.getBirthday());
             deleteUserBiorhythmCaches(userId);
         }
 
         if (requestDTO.getNickName() != null) {
+            // 본인 닉네임을 그대로 재제출하는 경우는 정상 통과, 다른 유저가 쓰는 닉네임이면 중복 예외
+            boolean isDuplicate = userRepository.existsByNickname(requestDTO.getNickName());
+            if (isDuplicate && !requestDTO.getNickName().equals(user.getNickname())) {
+                throw new BusinessException(ErrorCode.DUPLICATE_NICKNAME, "이미 사용 중인 닉네임입니다.");
+            }
             user.updateNickname(requestDTO.getNickName());
         }
 
@@ -109,33 +111,18 @@ public class UserService extends DefaultOAuth2UserService {
         boolean hasBirthday = user.getBirthday() != null;
 
         if (!hasNickname && !hasBirthday) {
-            return CheckUserResponseDTO.builder()
-                    .isChecked(false)
-                    .missingField("BOTH")
-                    .message("닉네임과 생년월일 입력이 필요합니다.")
-                    .build();
+            return UserConverter.toDTO(false, "BOTH", "닉네임과 생년월일 입력이 필요합니다.");
         }
 
         if (!hasBirthday) {
-            return CheckUserResponseDTO.builder()
-                    .isChecked(false)
-                    .missingField("BIRTHDAY")
-                    .message("생년월일 입력이 필요합니다.")
-                    .build();
+            return UserConverter.toDTO(false, "BIRTHDAY", "생년월일 입력이 필요합니다.");
         }
 
         if (!hasNickname) {
-            return CheckUserResponseDTO.builder()
-                    .isChecked(false)
-                    .missingField("NICKNAME")
-                    .message("닉네임 입력이 필요합니다.")
-                    .build();
+            return UserConverter.toDTO(false, "NICKNAME", "닉네임 입력이 필요합니다.");
         }
 
-        return CheckUserResponseDTO.builder()
-                .message("모두 입력이 되어있습니다.")
-                .isChecked(true)
-                .build();
+        return UserConverter.toDTO(true, null, "모두 입력이 되어있습니다.");
     }
 
     public String logoutUser(int userId) {

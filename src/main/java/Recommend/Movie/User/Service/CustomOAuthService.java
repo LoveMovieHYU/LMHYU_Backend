@@ -47,15 +47,35 @@ public class CustomOAuthService extends DefaultOAuth2UserService {
         Map<String, Object> attributes = oAuth2User.getAttributes();
 
         if (SocialProviderType.NAVER.name().equals(registrationId)) {
-            Map<String, Object> response = (Map<String, Object>) attributes.get("response");
-            providerId = "NAVER_" + response.get("id");
-            email = String.valueOf(response.get("email"));
-            name = String.valueOf(response.get("name"));
+            Object responseObj = attributes.get("response");
+            if (!(responseObj instanceof Map)) {
+                throw new OAuth2AuthenticationException("네이버 응답 정보가 올바르지 않습니다.");
+            }
+            @SuppressWarnings("unchecked")
+            Map<String, Object> response = (Map<String, Object>) responseObj;
+
+            Object id = response.get("id");
+            Object naverEmail = response.get("email");
+            Object naverName = response.get("name");
+            if (id == null || naverEmail == null || naverName == null) {
+                throw new OAuth2AuthenticationException("네이버 사용자 정보(id/email/name)가 누락되었습니다.");
+            }
+
+            providerId = "NAVER_" + id;
+            email = String.valueOf(naverEmail);
+            name = String.valueOf(naverName);
         }
         else if (SocialProviderType.GOOGLE.name().equals(registrationId)) {
-            providerId = "GOOGLE_" + attributes.get("sub");
-            email = String.valueOf(attributes.get("email"));
-            name = String.valueOf(attributes.get("name"));
+            Object sub = attributes.get("sub");
+            Object googleEmail = attributes.get("email");
+            Object googleName = attributes.get("name");
+            if (sub == null || googleEmail == null || googleName == null) {
+                throw new OAuth2AuthenticationException("구글 사용자 정보(sub/email/name)가 누락되었습니다.");
+            }
+
+            providerId = "GOOGLE_" + sub;
+            email = String.valueOf(googleEmail);
+            name = String.valueOf(googleName);
         }
         else {
             throw new OAuth2AuthenticationException("지원하지 않는 소셜 로그인입니다.");
