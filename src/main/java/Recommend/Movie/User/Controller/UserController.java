@@ -42,10 +42,7 @@ public class UserController {
     })
     @GetMapping(value = "/")
     public ResponseEntity<UserFindResponseDTO> userMeApi(Principal principal) {
-        if(principal == null){
-            throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
-        }
-        UserFindResponseDTO responseDTO = userService.readUser(Integer.parseInt(principal.getName()));
+        UserFindResponseDTO responseDTO = userService.readUser(getUserId(principal));
         return ResponseEntity.ok(responseDTO);
     }
 
@@ -62,10 +59,7 @@ public class UserController {
     })
     @DeleteMapping(value = "/")
     public ResponseEntity<Boolean> deleteUserApi(Principal principal) {
-        if(principal == null){
-            throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
-        }
-        userService.deleteUser(Integer.parseInt(principal.getName()));
+        userService.deleteUser(getUserId(principal));
         return ResponseEntity.status(200).body(true);
     }
 
@@ -85,11 +79,7 @@ public class UserController {
     @PostMapping("/update")
     public ResponseEntity<String> loginFinalUser(@Valid @RequestBody FinalLoginDTO requestDTO,
                                              Principal principal) {
-
-        if(principal == null){
-            throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
-        }
-        String response = userService.loginUserUpdate(Integer.parseInt(principal.getName()), requestDTO);
+        String response = userService.loginUserUpdate(getUserId(principal), requestDTO);
         return ResponseEntity.ok(response);
     }
 
@@ -110,12 +100,7 @@ public class UserController {
     @PatchMapping("/update")
     public ResponseEntity<String> updateUser(@Valid @RequestBody UpdateUserRequestDTO requestDTO,
                                                      Principal principal) {
-
-        if(principal == null){
-            throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
-        }
-
-        String response = userService.updateUserInfo(Integer.parseInt(principal.getName()), requestDTO);
+        String response = userService.updateUserInfo(getUserId(principal), requestDTO);
         return ResponseEntity.ok(response);
     }
 
@@ -130,11 +115,7 @@ public class UserController {
                     "isChecked: false  정보 입력 화면으로 이동")
     @GetMapping("/check-profile")
     public ResponseEntity<CheckUserResponseDTO> checkUserBirthDayNickName(Principal principal) {
-        if(principal == null){
-            throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
-        }
-
-        CheckUserResponseDTO responseDTO = userService.checkUserInfo(Integer.parseInt(principal.getName()));
+        CheckUserResponseDTO responseDTO = userService.checkUserInfo(getUserId(principal));
         return ResponseEntity.ok(responseDTO);
     }
 
@@ -146,11 +127,23 @@ public class UserController {
     @Operation(summary = "유저 로그아웃, 리프레시 토큰 삭제")
     @GetMapping("/logout")
     public ResponseEntity<String> logoutUser(Principal principal) {
-        if(principal == null){
+        String response = userService.logoutUser(getUserId(principal));
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 인증 주체(Principal)에서 userId 를 안전하게 추출한다.
+     * 로그인하지 않았으면 UNAUTHORIZED, userId 가 숫자가 아니면 INVALID_INPUT 으로 변환한다.
+     * (LikeMovieService.parseUserId 와 동일한 파싱 정책)
+     */
+    private int getUserId(Principal principal) {
+        if (principal == null) {
             throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다.");
         }
-
-        String response = userService.logoutUser(Integer.parseInt(principal.getName()));
-        return ResponseEntity.ok(response);
+        try {
+            return Integer.parseInt(principal.getName());
+        } catch (NumberFormatException e) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "유효하지 않은 사용자 식별자입니다.");
+        }
     }
 }

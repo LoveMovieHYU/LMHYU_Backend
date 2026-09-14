@@ -1,9 +1,13 @@
 package Recommend.Movie.Config;
 
 
+import Recommend.Movie.Config.Exception.Dto.ErrorDTO;
 import Recommend.Movie.User.Handler.OAuth2LoginSuccessHandler;
 import Recommend.Movie.User.Service.CustomOAuthService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,6 +23,7 @@ public class SecurityConfig {
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final CustomOAuthService customOAuthService;
     private final boolean devEndpointsEnabled;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public SecurityConfig(OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler,
                           CustomOAuthService customOAuthService,
@@ -74,7 +79,14 @@ public class SecurityConfig {
                             if (request.getRequestURI().startsWith("/api/")) {
                                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                                 response.setContentType("application/json;charset=UTF-8");
-                                response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"토큰이 만료되었거나 유효하지 않습니다.\"}");
+                                // 프로젝트 공통 에러 응답 규약(ErrorDTO)에 맞춰 직렬화한다.
+                                // 토큰 만료로 단정하지 않고 상황 중립적 메시지를 사용한다.
+                                ErrorDTO body = ErrorDTO.builder()
+                                        .code("UNAUTHORIZED")
+                                        .message("인증이 필요합니다.")
+                                        .errors(List.of())
+                                        .build();
+                                response.getWriter().write(objectMapper.writeValueAsString(body));
                             } else {
                                 response.sendRedirect("/login");
                             }

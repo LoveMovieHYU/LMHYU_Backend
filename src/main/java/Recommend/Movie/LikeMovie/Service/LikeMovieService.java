@@ -37,10 +37,15 @@ public class LikeMovieService {
     @Transactional
     public String saveMovieReaction(long tmdbId, MovieReactionRequestDTO requestDTO,
                                     String userId){
-        User user = getUser(parseUserId(userId));
+        int id = parseUserId(userId);
+        User user = getUser(id);
         Movie movie = movieRepository.findByTmdbId(tmdbId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MOVIE_NOT_FOUND, "해당 영화가 존재하지 않습니다."));
 
+        // 중복 좋아요 멱등 처리: 이미 좋아요한 영화면 중복 저장하지 않고 조용히 반환한다.
+        if (likeMovieRepository.existsByUser_UserIdAndMovie_TmdbId(id, tmdbId)) {
+            return "이미 좋아요한 영화입니다.";
+        }
 
         LikedMovie likedMovie = LikeMovieConverter.toEntity(requestDTO, user, movie);
         user.addLikeMovie(likedMovie);

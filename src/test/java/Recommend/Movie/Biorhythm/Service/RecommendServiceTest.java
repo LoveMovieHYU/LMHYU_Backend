@@ -6,7 +6,6 @@ import Recommend.Movie.Config.Exception.BusinessException;
 import Recommend.Movie.Config.Exception.ErrorCode;
 import Recommend.Movie.User.Domain.Gender;
 import Recommend.Movie.User.Domain.User;
-import Recommend.Movie.User.Repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,7 +18,6 @@ import org.springframework.data.redis.core.ValueOperations;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -28,12 +26,12 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class RecommendServiceTest {
-    
+
     @InjectMocks
     private RecommendService recommendService;
 
     @Mock
-    private UserRepository userRepository;
+    private RecommendQueryService recommendQueryService;
 
     @Mock
     private RedisTemplate<String, Object> redisTemplate;
@@ -51,11 +49,10 @@ class RecommendServiceTest {
                 .gender(Gender.valueOf("M"))
                 .build();
     }
-    
+
     /**
      * Redis Cache hit 테스트
      * */
-
     @Test
     @DisplayName("Redis에 영화 추천 캐시가 있으면 AI 서버를 호출하지 않고 캐시 데이터를 반환한다 (Cache Hit)")
     void getRecommendation_CacheHit() {
@@ -76,37 +73,37 @@ class RecommendServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.get(0).getTitle()).isEqualTo("캐시된 영화");
 
-        verify(userRepository, never()).findById(userId);
+        // 캐시 적중 시 DB 조회(유저 조회)가 일어나지 않아야 한다
+        verify(recommendQueryService, never()).getUser(userId);
     }
 
-
     @Test
-    @DisplayName("유저의 생년월일이 없으면 BAD_REQUEST 예외가 발생")
+    @DisplayName("유저 조회에서 생년월일이 없어 BAD_REQUEST 예외가 발생하면 그대로 전파한다")
     void analyzeBiorhythm_WithoutBirthday_ThrowsException() {
         // given
         int userId = 1;
-        User noBirthdayUser = User.builder().userId(userId).build(); // 생년월일 세팅 안 됨
-        when(userRepository.findById(userId)).thenReturn(Optional.of(noBirthdayUser));
+        when(recommendQueryService.getUser(userId))
+                .thenThrow(new BusinessException(ErrorCode.BAD_REQUEST, "생년월일 정보가 필요합니다. 마이페이지에서 설정해주세요."));
 
         // when & then
-        BusinessException exception = assertThrows(BusinessException.class, () -> {
-            recommendService.analyzeBiorhythm(userId);
-        });
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> recommendService.analyzeBiorhythm(userId));
 
         assertThat(exception.getCode()).isEqualTo(ErrorCode.BAD_REQUEST);
         assertThat(exception.getMessage()).contains("생년월일 정보가 필요합니다");
     }
 
     @Test
-    @DisplayName("존재하지 않는 유저면 USER_NOT_FOUND 예외가 발생")
+    @DisplayName("유저 조회에서 존재하지 않는 유저면 USER_NOT_FOUND 예외를 그대로 전파한다")
     void analyzeBiorhythm_UserNotFound_ThrowsException() {
         // given
         int userId = 999;
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        when(recommendQueryService.getUser(userId))
+                .thenThrow(new BusinessException(ErrorCode.USER_NOT_FOUND, "유저가 없습니다."));
 
         // when & then
-        BusinessException exception = assertThrows(BusinessException.class, () ->
-                recommendService.analyzeBiorhythm(userId));
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> recommendService.analyzeBiorhythm(userId));
 
         assertThat(exception.getCode()).isEqualTo(ErrorCode.USER_NOT_FOUND);
     }
@@ -120,11 +117,11 @@ class RecommendServiceTest {
                 .userId(userId)
                 .birthday(LocalDate.of(2002, 8, 24))
                 .build();
-        when(userRepository.findById(userId)).thenReturn(Optional.of(noGenderUser));
+        when(recommendQueryService.getUser(userId)).thenReturn(noGenderUser);
 
         // when & then
-        BusinessException exception = assertThrows(BusinessException.class, () ->
-                recommendService.getCustomRecommend(0.5, 0.1, 0.2, userId));
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> recommendService.getCustomRecommend(0.5, 0.1, 0.2, userId));
 
         assertThat(exception.getCode()).isEqualTo(ErrorCode.BAD_REQUEST);
     }
@@ -134,7 +131,7 @@ class RecommendServiceTest {
     void analyzeBiorhythm_Success() {
         // given
         int userId = 1;
-        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(recommendQueryService.getUser(userId)).thenReturn(testUser);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
         // when
@@ -148,6 +145,5 @@ class RecommendServiceTest {
         // Redis에 바이오리듬 수치가 잘 저장(set) 되었는지 검증
         verify(valueOperations, times(1)).set(anyString(), any(), anyLong(), any());
     }
-
 
 }
